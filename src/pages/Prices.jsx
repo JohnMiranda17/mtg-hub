@@ -1,9 +1,205 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation, Link } from 'react-router-dom';
 import { getCardByName, formatPrice, getCardImage } from '../utils/scryfall';
+import { recordSnapshot, getHistory, recordSynergyLink, getSynergyLinks } from '../utils/priceHistory';
 import { usePriceWatchlist } from '../hooks/usePriceWatchlist';
 import CardSearchInput from '../components/CardSearchInput';
 import PrintingPicker from '../components/PrintingPicker';
+import PriceChart from '../components/PriceChart';
 
+/* ── Reddit Mentions ─────────────────────────────────────────────────────── */
+function RedditMentions({ cardName }) {
+  const [posts, setPosts]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]   = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true); setError(''); setPosts(null);
+
+    const url = `https://www.reddit.com/r/magicTCG/search.json?q=${encodeURIComponent(cardName)}&restrict_sr=1&sort=new&t=month&limit=5`;
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        const children = data?.data?.children ?? [];
+        setPosts(children.map(c => ({
+          title:   c.data.title,
+          score:   c.data.score,
+          url:     `https://reddit.com${c.data.permalink}`,
+          created: c.data.created_utc,
+        })));
+      })
+      .catch(() => { if (!cancelled) setError('Could not load Reddit data.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [cardName]);
+
+  const count = posts?.length ?? 0;
+  const demand =
+    count >= 4 ? { label: 'High community interest', cls: 'demand-high' } :
+    count >= 2 ? { label: 'Some community discussion', cls: 'demand-med' } :
+                 { label: 'Low community activity', cls: 'demand-low' };
+
+  return (
+    <div className="insights-panel">
+      <div className="insights-header">
+        <span className="insights-title">📣 r/magicTCG — last 30 days</span>
+        {!loading && posts && (
+          <span className={`demand-badge ${demand.cls}`}>{demand.label}</span>
+        )}
+      </div>
+      {loading && <p className="insights-loading">Checking Reddit…</p>}
+      {error   && <p className="insights-error">{error}</p>}
+      {posts && posts.length === 0 && <p className="insights-empty">No recent posts found for "{cardName}".</p>}
+      {posts && posts.length > 0 && (
+        <ul className="reddit-posts">
+          {posts.map((p, i) => (
+            <li key={i} className="reddit-post">
+              <a href={p.url} target="_blank" rel="noreferrer" className="reddit-post-title">{p.title}</a>
+              <span className="reddit-post-score">▲ {p.score}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ── EDHREC Synergies ────────────────────────────────────────────────────── */
+function toEdhrecSlug(name) {
+  return name
+    .toLowerCase()
+    .replace(/[',]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function EdhrecSynergies({ card }) {
+  const [synCards, setSynCards] = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true); setError(''); setSynCards(null);
+
+    const slug = toEdhrecSlug(card.name);
+    fetch(`https://json.edhrec.com/pages/cards/${slug}.json`)
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        // Navigate the EDHREC response tree to find synergy cards
+        const lists = data?.container?.json_dict?.cardlists ?? [];
+        const synergyList = lists.find(l =>
+          l.tag === 'synergy' || (l.header ?? '').toLowerCase().includes('synergy')
+        ) ?? lists[0];
+
+        const views = (synergyList?.cardviews ?? []).slice(0, 8);
+        setSynCards(views);
+
+        // Record synergy links so those cards can reference back to this one
+        for (const v of views) {
+          if (v.sanitized_wo) recordSynergyLink(card, v.sanitized_wo);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError('EDHREC data unavailable for this card.');
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [card.id]);
+
+  if (loading) return (
+    <div className="insights-panel">
+      <div className="insights-header"><span className="insights-title">♻ EDHREC Synergies</span></div>
+      <p className="insights-loading">Loading EDHREC data…</p>
+    </div>
+  );
+
+  if (error) return (
+    <div className="insights-panel">
+      <div className="insights-header"><span className="insights-title">♻ EDHREC Synergies</span></div>
+      <p className="insights-error">{error}</p>
+    </div>
+  );
+
+  if (!synCards || synCards.length === 0) return (
+    <div className="insights-panel">
+      <div className="insights-header"><span className="insights-title">♻ EDHREC Synergies</span></div>
+      <p className="insights-empty">No synergy data found on EDHREC.</p>
+    </div>
+  );
+
+  return (
+    <div className="insights-panel">
+      <div className="insights-header">
+        <span className="insights-title">♻ EDHREC Synergy Cards</span>
+        <a
+          href={`https://edhrec.com/cards/${toEdhrecSlug(card.name)}`}
+          target="_blank" rel="noreferrer"
+          className="insights-external-link"
+        >
+          View on EDHREC ↗
+        </a>
+      </div>
+      <p className="insights-sub">Cards commonly played alongside <strong>{card.name}</strong>. Price movement in this card may affect these.</p>
+      <div className="syn-cards-grid">
+        {synCards.map((c, i) => {
+          const img    = c.image_uris?.[0];
+          const price  = c.prices?.usd;
+          const synPct = c.synergy != null ? Math.round(c.synergy * 100) : null;
+          const name   = c.name ?? c.sanitized ?? '';
+          return (
+            <Link
+              key={i}
+              to="/prices"
+              state={{ cardName: name }}
+              className="syn-card"
+              title={name}
+            >
+              {img
+                ? <img src={img} alt={name} className="syn-card-img" loading="lazy" />
+                : <div className="syn-card-placeholder">{name}</div>
+              }
+              <div className="syn-card-info">
+                <div className="syn-card-name">{name}</div>
+                {price  && <div className="syn-card-price">{formatPrice(price)}</div>}
+                {synPct != null && <div className="syn-card-syn">{synPct > 0 ? '+' : ''}{synPct}% syn</div>}
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Synergy back-reference (shown when current card is in someone else's synergy list) */
+function SynergyBackLinks({ card }) {
+  const links = getSynergyLinks(card.id);
+  if (links.length === 0) return null;
+  return (
+    <div className="insights-panel">
+      <div className="insights-header">
+        <span className="insights-title">💡 Price Influence Notes</span>
+      </div>
+      <p className="insights-sub">Price may be affected by community interest in the following cards:</p>
+      <ul className="backlink-list">
+        {links.map((l, i) => (
+          <li key={i}>
+            <Link to="/prices" state={{ cardName: l.name }} className="backlink-name">{l.name}</Link>
+            {' '}— viewed together on this app
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ── Main price card ─────────────────────────────────────────────────────── */
 function PriceCard({ card, onWatch, onUnwatch, watched }) {
   const img = getCardImage(card, 'normal');
   return (
@@ -66,6 +262,7 @@ function PriceCard({ card, onWatch, onUnwatch, watched }) {
   );
 }
 
+/* ── Watchlist row ───────────────────────────────────────────────────────── */
 function WatchlistRow({ item, onRemove }) {
   const [liveCard, setLiveCard] = useState(null);
   const [loading, setLoading]   = useState(false);
@@ -94,7 +291,9 @@ function WatchlistRow({ item, onRemove }) {
   );
 }
 
+/* ── Prices page ─────────────────────────────────────────────────────────── */
 export default function Prices() {
+  const location = useLocation();
   const [query, setQuery]                       = useState('');
   const [initialCard, setInitialCard]           = useState(null);
   const [selectedPrinting, setSelectedPrinting] = useState(null);
@@ -102,30 +301,48 @@ export default function Prices() {
   const [error, setError]                       = useState('');
   const { watchlist, addToWatchlist, removeFromWatchlist, isWatched } = usePriceWatchlist();
 
-  async function search() {
-    if (!query.trim()) return;
+  // Auto-search when navigated here from Collection (card name click)
+  useEffect(() => {
+    const name = location.state?.cardName;
+    if (name) {
+      setQuery(name);
+      doSearch(name);
+    }
+  }, []);
+
+  // Record price snapshot whenever a printing is selected
+  useEffect(() => {
+    if (selectedPrinting) {
+      recordSnapshot(
+        selectedPrinting.id,
+        selectedPrinting.prices?.usd      ? parseFloat(selectedPrinting.prices.usd)      : null,
+        selectedPrinting.prices?.usd_foil ? parseFloat(selectedPrinting.prices.usd_foil) : null,
+      );
+    }
+  }, [selectedPrinting?.id]);
+
+  async function doSearch(name) {
+    if (!name?.trim()) return;
     setLoading(true); setError('');
     setInitialCard(null); setSelectedPrinting(null);
     try {
-      const card = await getCardByName(query);
-      setInitialCard(card);
-      setSelectedPrinting(card);
+      const card = await getCardByName(name);
+      setInitialCard(card); setSelectedPrinting(card);
     } catch {
-      setError(`Card "${query}" not found.`);
-    } finally {
-      setLoading(false);
-    }
+      setError(`Card "${name}" not found.`);
+    } finally { setLoading(false); }
   }
 
-  function handleQuerySelect(name) {
-    setQuery(name);
-  }
+  function handleSearch() { doSearch(query); }
+  function handleQuerySelect(name) { setQuery(name); }
+
+  const history = selectedPrinting ? getHistory(selectedPrinting.id) : [];
 
   return (
     <div className="page-wrap">
       <div className="page-header" style={{ '--page-color': '#4ac97a' }}>
         <h1>💰 Price Tracker</h1>
-        <p>Live prices from Scryfall. Select a printing to see its specific price.</p>
+        <p>Live prices from Scryfall (TCGPlayer data). Price history builds up as you browse. Select a printing for its specific price.</p>
       </div>
 
       <div className="price-search-row">
@@ -135,7 +352,7 @@ export default function Prices() {
           onSelect={handleQuerySelect}
           placeholder="Search for a card…"
         />
-        <button className="btn-primary" onClick={search} disabled={loading || !query.trim()}>
+        <button className="btn-primary" onClick={handleSearch} disabled={loading || !query.trim()}>
           {loading ? '…' : 'Look Up'}
         </button>
       </div>
@@ -152,14 +369,41 @@ export default function Prices() {
       )}
 
       {selectedPrinting && (
-        <div className="price-result-section">
-          <PriceCard
-            card={selectedPrinting}
-            watched={isWatched(selectedPrinting.id)}
-            onWatch={addToWatchlist}
-            onUnwatch={removeFromWatchlist}
-          />
-        </div>
+        <>
+          <div className="price-result-section">
+            <PriceCard
+              card={selectedPrinting}
+              watched={isWatched(selectedPrinting.id)}
+              onWatch={addToWatchlist}
+              onUnwatch={removeFromWatchlist}
+            />
+          </div>
+
+          {/* Price history chart */}
+          {history.length > 0 && (
+            <div className="price-insights-section">
+              <h3 className="insights-section-title">📈 Price History</h3>
+              <PriceChart history={history} foil={false} />
+              {history.some(s => s.priceFoil != null) && (
+                <PriceChart history={history} foil={true} />
+              )}
+            </div>
+          )}
+
+          {/* Synergy back-references (cards that led here) */}
+          <div className="price-insights-section">
+            <SynergyBackLinks card={selectedPrinting} />
+          </div>
+
+          {/* Community & synergy insights */}
+          <div className="price-insights-section">
+            <h3 className="insights-section-title">🔍 Market Insights</h3>
+            <div className="insights-columns">
+              <RedditMentions cardName={selectedPrinting.name} />
+              <EdhrecSynergies card={selectedPrinting} />
+            </div>
+          </div>
+        </>
       )}
 
       {watchlist.length > 0 && (

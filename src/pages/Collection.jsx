@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { useCollection } from '../hooks/useCollection';
 import { getCardByName, getCardById, getCardBySetNumber, formatPrice, getCardImage } from '../utils/scryfall';
 import { parseTextImport, parseCsvImport } from '../utils/importParser';
@@ -6,12 +8,6 @@ import CardSearchInput from '../components/CardSearchInput';
 import PrintingPicker from '../components/PrintingPicker';
 
 const CONDITIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
-const SORT_OPTIONS = [
-  { value: 'name',     label: 'Name' },
-  { value: 'addedAt',  label: 'Date Added' },
-  { value: 'price',    label: 'Price' },
-  { value: 'quantity', label: 'Quantity' },
-];
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -30,7 +26,25 @@ function buildCardEntry(card, overrides) {
   };
 }
 
-/* ── Add-one-card form ─────────────────────────────────────────────────── */
+/* ── Sortable th ───────────────────────────────────────────────────────────── */
+function SortTh({ col, sort, onSort, children, align }) {
+  const active = sort.col === col;
+  return (
+    <th
+      className={`sortable-th${active ? ' sort-th-active' : ''}`}
+      style={align ? { textAlign: align } : {}}
+      onClick={() => onSort(col)}
+    >
+      {children}
+      {active
+        ? <span className="sort-arrow">{sort.dir === 'desc' ? ' ▼' : ' ▲'}</span>
+        : <span className="sort-arrow-ghost"> ⇅</span>
+      }
+    </th>
+  );
+}
+
+/* ── Add-one-card form ─────────────────────────────────────────────────────── */
 function AddCardForm({ onAdd }) {
   const [name, setName]                         = useState('');
   const [initialCard, setInitialCard]           = useState(null);
@@ -44,19 +58,14 @@ function AddCardForm({ onAdd }) {
 
   async function handleSelect(selectedName) {
     setName(selectedName);
-    setInitialCard(null);
-    setSelectedPrinting(null);
-    setError('');
+    setInitialCard(null); setSelectedPrinting(null); setError('');
     setFetchingCard(true);
     try {
       const card = await getCardByName(selectedName);
-      setInitialCard(card);
-      setSelectedPrinting(card);
+      setInitialCard(card); setSelectedPrinting(card);
     } catch {
       setError(`"${selectedName}" not found on Scryfall.`);
-    } finally {
-      setFetchingCard(false);
-    }
+    } finally { setFetchingCard(false); }
   }
 
   function handleNameChange(n) {
@@ -69,8 +78,7 @@ function AddCardForm({ onAdd }) {
     setAdding(true);
     onAdd(buildCardEntry(selectedPrinting, { quantity, condition, foil }));
     setName(''); setInitialCard(null); setSelectedPrinting(null);
-    setQuantity(1); setCondition('NM'); setFoil(false);
-    setAdding(false);
+    setQuantity(1); setCondition('NM'); setFoil(false); setAdding(false);
   }
 
   return (
@@ -93,65 +101,99 @@ function AddCardForm({ onAdd }) {
           {adding ? '…' : '+ Add'}
         </button>
       </div>
-
       {fetchingCard && <p className="printings-loading">Looking up card…</p>}
-
       {initialCard && (
-        <PrintingPicker
-          card={initialCard}
-          selectedId={selectedPrinting?.id}
-          onSelect={setSelectedPrinting}
-        />
+        <PrintingPicker card={initialCard} selectedId={selectedPrinting?.id} onSelect={setSelectedPrinting} />
       )}
-
       {error && <p className="form-error">{error}</p>}
     </div>
   );
 }
 
-/* ── Table row ─────────────────────────────────────────────────────────── */
-function CollectionRow({ card, onUpdate, onRemove, onChangePrinting }) {
-  const price = card.foil ? (card.priceFoil ?? card.price) : card.price;
-  return (
-    <tr className="coll-row">
-      <td className="coll-img-cell">
-        {card.imageUri && <img src={card.imageUri} alt={card.name} className="coll-card-img" />}
-        <button className="btn-ghost-sm change-print-btn" onClick={() => onChangePrinting(card)}>
-          change
-        </button>
-      </td>
-      <td>
-        <div className="coll-card-name">{card.name}</div>
-        <div className="coll-card-meta">{card.setName} · {card.typeLine}</div>
-      </td>
-      <td>
-        <input type="number" className="qty-input-inline" min={1} max={99} value={card.quantity}
-          onChange={e => onUpdate(card.id, { quantity: Number(e.target.value) })} />
-      </td>
-      <td>
-        <select className="cond-select-inline" value={card.condition}
-          onChange={e => onUpdate(card.id, { condition: e.target.value })}>
-          {CONDITIONS.map(c => <option key={c}>{c}</option>)}
-        </select>
-      </td>
-      <td><span className={`foil-badge${card.foil ? ' foil-yes' : ''}`}>{card.foil ? '✨ Foil' : 'Regular'}</span></td>
-      <td>
-        <label className="trade-toggle" title={card.forTrade ? 'Listed for trade' : 'Mark for trade'}>
-          <input type="checkbox" checked={card.forTrade ?? false}
-            onChange={e => onUpdate(card.id, { forTrade: e.target.checked })} />
-          <span className={`trade-toggle-label${card.forTrade ? ' trade-active' : ''}`}>
-            {card.forTrade ? '🔄 Trade' : 'Trade'}
-          </span>
-        </label>
-      </td>
-      <td className="coll-price">{formatPrice(price)}</td>
-      <td className="coll-total">{formatPrice(price != null ? price * card.quantity : null)}</td>
-      <td><button className="btn-danger-sm" onClick={() => onRemove(card.id)}>✕</button></td>
-    </tr>
+/* ── Card image hover tooltip (portaled to body so it escapes the table) ──── */
+function CardImageTooltip({ imageUri, rect }) {
+  if (!rect) return null;
+  const width  = 200;
+  const height = Math.round(width * 1.396); // standard card aspect ratio
+  const spaceRight = window.innerWidth - rect.right;
+  const top  = Math.min(rect.top - 4, window.innerHeight - height - 8);
+  const style = spaceRight >= width + 12
+    ? { position: 'fixed', top, left: rect.right + 8, width, zIndex: 9999, pointerEvents: 'none' }
+    : { position: 'fixed', top, right: window.innerWidth - rect.left + 8, width, zIndex: 9999, pointerEvents: 'none' };
+
+  return createPortal(
+    <img src={imageUri} alt="" className="card-img-hover-large" style={style} />,
+    document.body
   );
 }
 
-/* ── Import modal ──────────────────────────────────────────────────────── */
+/* ── Table row ─────────────────────────────────────────────────────────────── */
+function CollectionRow({ card, onUpdate, onRemove, onChangePrinting }) {
+  const [hoverRect, setHoverRect] = useState(null);
+  const price = card.foil ? (card.priceFoil ?? card.price) : card.price;
+  const normalUri = card.imageUri?.replace('/small/', '/normal/');
+
+  return (
+    <>
+      <tr className="coll-row">
+        <td className="coll-img-cell">
+          {card.imageUri && (
+            <img
+              src={card.imageUri}
+              alt={card.name}
+              className="coll-card-img"
+              onMouseEnter={e => setHoverRect(e.currentTarget.getBoundingClientRect())}
+              onMouseLeave={() => setHoverRect(null)}
+            />
+          )}
+          <button className="btn-ghost-sm change-print-btn" onClick={() => onChangePrinting(card)}>
+            change
+          </button>
+        </td>
+        <td>
+          <Link
+            to="/prices"
+            state={{ cardName: card.name, scryfallId: card.scryfallId }}
+            className="coll-card-name-link"
+          >
+            {card.name}
+          </Link>
+          <div className="coll-card-meta">{card.setName} · {card.typeLine}</div>
+        </td>
+        <td>
+          <input type="number" className="qty-input-inline" min={1} max={99} value={card.quantity}
+            onChange={e => onUpdate(card.id, { quantity: Number(e.target.value) })} />
+        </td>
+        <td>
+          <select className="cond-select-inline" value={card.condition}
+            onChange={e => onUpdate(card.id, { condition: e.target.value })}>
+            {CONDITIONS.map(c => <option key={c}>{c}</option>)}
+          </select>
+        </td>
+        <td>
+          <span className={`foil-badge${card.foil ? ' foil-yes' : ''}`}>
+            {card.foil ? '✨ Foil' : 'Regular'}
+          </span>
+        </td>
+        <td>
+          <label className="trade-toggle" title={card.forTrade ? 'Listed for trade' : 'Mark for trade'}>
+            <input type="checkbox" checked={card.forTrade ?? false}
+              onChange={e => onUpdate(card.id, { forTrade: e.target.checked })} />
+            <span className={`trade-toggle-label${card.forTrade ? ' trade-active' : ''}`}>
+              {card.forTrade ? '🔄 Trade' : 'Trade'}
+            </span>
+          </label>
+        </td>
+        <td className="coll-price">{formatPrice(price)}</td>
+        <td className="coll-total">{formatPrice(price != null ? price * card.quantity : null)}</td>
+        <td><button className="btn-danger-sm" onClick={() => onRemove(card.id)}>✕</button></td>
+      </tr>
+      {hoverRect && <CardImageTooltip imageUri={normalUri} rect={hoverRect} />}
+    </>
+  );
+}
+
+/* ── Import modal ──────────────────────────────────────────────────────────── */
 function ImportModal({ onClose, onImportCards }) {
   const [tab, setTab]           = useState('text');
   const [rawText, setRawText]   = useState('');
@@ -320,15 +362,13 @@ function ImportModal({ onClose, onImportCards }) {
   );
 }
 
-/* ── Change printing modal ─────────────────────────────────────────────── */
+/* ── Change printing modal ─────────────────────────────────────────────────── */
 function ChangePrintingModal({ entry, onClose, onUpdate }) {
   const [initialCard, setInitialCard]           = useState(null);
   const [selectedPrinting, setSelectedPrinting] = useState(null);
   const [loading, setLoading]                   = useState(true);
   const [error, setError]                       = useState('');
 
-  // Fetch the current printing so PrintingPicker gets the right prints_search_uri
-  // and the current printing is pre-selected in the grid
   useEffect(() => {
     let cancelled = false;
     getCardById(entry.scryfallId)
@@ -394,22 +434,38 @@ function ChangePrintingModal({ entry, onClose, onUpdate }) {
   );
 }
 
-/* ── Collection page ───────────────────────────────────────────────────── */
+/* ── Collection page ───────────────────────────────────────────────────────── */
 export default function Collection() {
   const { cards, addCard, updateCard, removeCard, importCards, totalCards, totalValue } = useCollection();
-  const [sort, setSort]               = useState('addedAt');
+  const [sort, setSort]               = useState({ col: 'addedAt', dir: 'desc' });
   const [filter, setFilter]           = useState('');
   const [showImport, setShowImport]   = useState(false);
   const [changingCard, setChangingCard] = useState(null);
 
+  function handleSortCol(col) {
+    setSort(prev =>
+      prev.col === col
+        ? { col, dir: prev.dir === 'desc' ? 'asc' : 'desc' }
+        : { col, dir: 'desc' }
+    );
+  }
+
   const sorted = [...cards]
     .filter(c => !filter || c.name.toLowerCase().includes(filter.toLowerCase()))
     .sort((a, b) => {
-      if (sort === 'name')     return a.name.localeCompare(b.name);
-      if (sort === 'price')    return (b.price ?? 0) - (a.price ?? 0);
-      if (sort === 'quantity') return b.quantity - a.quantity;
-      return b.addedAt - a.addedAt;
+      const d = sort.dir === 'asc' ? 1 : -1;
+      switch (sort.col) {
+        case 'name':      return d * a.name.localeCompare(b.name);
+        case 'quantity':  return d * (a.quantity - b.quantity);
+        case 'condition': return d * a.condition.localeCompare(b.condition);
+        case 'foil':      return d * ((a.foil ? 1 : 0) - (b.foil ? 1 : 0));
+        case 'price':     return d * ((a.price ?? 0) - (b.price ?? 0));
+        case 'total':     return d * ((a.price ?? 0) * a.quantity - (b.price ?? 0) * b.quantity);
+        default:          return d * (a.addedAt - b.addedAt); // 'addedAt'
+      }
     });
+
+  const thProps = col => ({ col, sort, onSort: handleSortCol });
 
   return (
     <div className="page-wrap">
@@ -417,7 +473,7 @@ export default function Collection() {
         <div className="page-header-row">
           <div>
             <h1>📦 Collection Tracker</h1>
-            <p>Track your physical cards. Prices pulled live from Scryfall.</p>
+            <p>Track your physical cards. Click any column header to sort. Click a card name to view prices.</p>
           </div>
           <button className="btn-secondary import-trigger" onClick={() => setShowImport(true)}>
             ⬆ Import List
@@ -438,21 +494,21 @@ export default function Collection() {
           <div className="coll-controls">
             <input className="filter-input" placeholder="Filter by name…"
               value={filter} onChange={e => setFilter(e.target.value)} />
-            <div className="sort-row">
-              Sort:
-              {SORT_OPTIONS.map(o => (
-                <button key={o.value}
-                  className={`sort-btn${sort === o.value ? ' sort-active' : ''}`}
-                  onClick={() => setSort(o.value)}>
-                  {o.label}
-                </button>
-              ))}
-            </div>
           </div>
           <div className="coll-table-wrap">
             <table className="coll-table">
               <thead>
-                <tr><th></th><th>Card</th><th>Qty</th><th>Cond.</th><th>Type</th><th>Trade</th><th>Price</th><th>Total</th><th></th></tr>
+                <tr>
+                  <th></th>
+                  <SortTh {...thProps('name')}>Card</SortTh>
+                  <SortTh {...thProps('quantity')} align="center">Qty</SortTh>
+                  <SortTh {...thProps('condition')}>Cond.</SortTh>
+                  <SortTh {...thProps('foil')}>Type</SortTh>
+                  <th>Trade</th>
+                  <SortTh {...thProps('price')} align="right">Price</SortTh>
+                  <SortTh {...thProps('total')} align="right">Total</SortTh>
+                  <th></th>
+                </tr>
               </thead>
               <tbody>
                 {sorted.map(card => (
