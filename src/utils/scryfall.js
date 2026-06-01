@@ -30,6 +30,12 @@ export async function getCardBySetNumber(set, number) {
   return sfetch(`${BASE}/cards/${encodeURIComponent(set.toLowerCase())}/${encodeURIComponent(number)}`);
 }
 
+export async function getPrintings(card) {
+  if (!card?.prints_search_uri) return [];
+  const data = await sfetch(card.prints_search_uri);
+  return data.data ?? [];
+}
+
 export async function searchCards(query) {
   const data = await sfetch(`${BASE}/cards/search?q=${encodeURIComponent(query)}&order=name`);
   return data.data ?? [];
