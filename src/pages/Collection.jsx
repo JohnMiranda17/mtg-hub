@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCollection } from '../hooks/useCollection';
-import { getCardByName, getCardBySetNumber, formatPrice, getCardImage } from '../utils/scryfall';
+import { getCardByName, getCardById, getCardBySetNumber, formatPrice, getCardImage } from '../utils/scryfall';
 import { parseTextImport, parseCsvImport } from '../utils/importParser';
 import CardSearchInput from '../components/CardSearchInput';
 import PrintingPicker from '../components/PrintingPicker';
@@ -110,12 +110,15 @@ function AddCardForm({ onAdd }) {
 }
 
 /* ── Table row ─────────────────────────────────────────────────────────── */
-function CollectionRow({ card, onUpdate, onRemove }) {
+function CollectionRow({ card, onUpdate, onRemove, onChangePrinting }) {
   const price = card.foil ? (card.priceFoil ?? card.price) : card.price;
   return (
     <tr className="coll-row">
       <td className="coll-img-cell">
         {card.imageUri && <img src={card.imageUri} alt={card.name} className="coll-card-img" />}
+        <button className="btn-ghost-sm change-print-btn" onClick={() => onChangePrinting(card)}>
+          change
+        </button>
       </td>
       <td>
         <div className="coll-card-name">{card.name}</div>
@@ -308,12 +311,87 @@ function ImportModal({ onClose, onImportCards }) {
   );
 }
 
+/* ── Change printing modal ─────────────────────────────────────────────── */
+function ChangePrintingModal({ entry, onClose, onUpdate }) {
+  const [initialCard, setInitialCard]           = useState(null);
+  const [selectedPrinting, setSelectedPrinting] = useState(null);
+  const [loading, setLoading]                   = useState(true);
+  const [error, setError]                       = useState('');
+
+  // Fetch the current printing so PrintingPicker gets the right prints_search_uri
+  // and the current printing is pre-selected in the grid
+  useEffect(() => {
+    let cancelled = false;
+    getCardById(entry.scryfallId)
+      .then(card => { if (!cancelled) { setInitialCard(card); setSelectedPrinting(card); } })
+      .catch(() =>
+        getCardByName(entry.name)
+          .then(card => { if (!cancelled) setInitialCard(card); })
+          .catch(() => { if (!cancelled) setError('Could not load card data from Scryfall.'); })
+      )
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [entry.scryfallId, entry.name]);
+
+  function handleApply() {
+    if (!selectedPrinting) return;
+    onUpdate(entry.id, {
+      scryfallId: selectedPrinting.id,
+      setCode:    selectedPrinting.set,
+      setName:    selectedPrinting.set_name,
+      imageUri:   getCardImage(selectedPrinting, 'small'),
+      price:      selectedPrinting.prices?.usd      ? parseFloat(selectedPrinting.prices.usd)      : null,
+      priceFoil:  selectedPrinting.prices?.usd_foil ? parseFloat(selectedPrinting.prices.usd_foil) : null,
+    });
+    onClose();
+  }
+
+  const changed = selectedPrinting && selectedPrinting.id !== entry.scryfallId;
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal modal-wide">
+        <div className="modal-header">
+          <span className="modal-title">Change Printing — {entry.name}</span>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          {loading && <p className="printings-loading">Loading printings…</p>}
+          {error  && <p className="form-error">{error}</p>}
+          {!loading && initialCard && (
+            <>
+              <p className="import-hint">
+                Currently: <strong>{entry.setName}</strong>.
+                Hover any printing for a preview, then click to select.
+              </p>
+              <PrintingPicker
+                card={initialCard}
+                selectedId={selectedPrinting?.id ?? entry.scryfallId}
+                onSelect={setSelectedPrinting}
+              />
+            </>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" onClick={handleApply} disabled={!changed}>
+            {changed
+              ? `Switch to ${selectedPrinting.set_name} #${selectedPrinting.collector_number}`
+              : 'Select a different printing'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Collection page ───────────────────────────────────────────────────── */
 export default function Collection() {
   const { cards, addCard, updateCard, removeCard, importCards, totalCards, totalValue } = useCollection();
-  const [sort, setSort]             = useState('addedAt');
-  const [filter, setFilter]         = useState('');
-  const [showImport, setShowImport] = useState(false);
+  const [sort, setSort]               = useState('addedAt');
+  const [filter, setFilter]           = useState('');
+  const [showImport, setShowImport]   = useState(false);
+  const [changingCard, setChangingCard] = useState(null);
 
   const sorted = [...cards]
     .filter(c => !filter || c.name.toLowerCase().includes(filter.toLowerCase()))
@@ -369,7 +447,8 @@ export default function Collection() {
               </thead>
               <tbody>
                 {sorted.map(card => (
-                  <CollectionRow key={card.id} card={card} onUpdate={updateCard} onRemove={removeCard} />
+                  <CollectionRow key={card.id} card={card} onUpdate={updateCard} onRemove={removeCard}
+                    onChangePrinting={setChangingCard} />
                 ))}
               </tbody>
             </table>
@@ -383,6 +462,14 @@ export default function Collection() {
 
       {showImport && (
         <ImportModal onClose={() => setShowImport(false)} onImportCards={importCards} />
+      )}
+
+      {changingCard && (
+        <ChangePrintingModal
+          entry={changingCard}
+          onClose={() => setChangingCard(null)}
+          onUpdate={updateCard}
+        />
       )}
     </div>
   );
