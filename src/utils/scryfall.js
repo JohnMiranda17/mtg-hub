@@ -26,6 +26,10 @@ export async function getCardById(id) {
   return sfetch(`${BASE}/cards/${id}`);
 }
 
+export async function getCardBySetNumber(set, number) {
+  return sfetch(`${BASE}/cards/${encodeURIComponent(set.toLowerCase())}/${encodeURIComponent(number)}`);
+}
+
 export async function searchCards(query) {
   const data = await sfetch(`${BASE}/cards/search?q=${encodeURIComponent(query)}&order=name`);
   return data.data ?? [];

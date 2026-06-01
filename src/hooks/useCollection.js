@@ -36,6 +36,25 @@ export function useCollection() {
     setCards(prev => prev.filter(c => c.id !== id));
   }
 
+  function importCards(newCards) {
+    setCards(prev => {
+      let updated = [...prev];
+      for (const card of newCards) {
+        const existing = updated.find(
+          c => c.scryfallId === card.scryfallId && c.foil === card.foil && c.condition === card.condition
+        );
+        if (existing) {
+          updated = updated.map(c =>
+            c.id === existing.id ? { ...c, quantity: c.quantity + card.quantity } : c
+          );
+        } else {
+          updated.push({ ...card, id: crypto.randomUUID(), addedAt: Date.now() });
+        }
+      }
+      return updated;
+    });
+  }
+
   function clearCollection() {
     setCards([]);
   }
@@ -46,5 +65,5 @@ export function useCollection() {
     return sum + price * c.quantity;
   }, 0);
 
-  return { cards, addCard, updateCard, removeCard, clearCollection, totalCards, totalValue };
+  return { cards, addCard, updateCard, removeCard, importCards, clearCollection, totalCards, totalValue };
 }
