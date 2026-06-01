@@ -135,6 +135,15 @@ function CollectionRow({ card, onUpdate, onRemove, onChangePrinting }) {
         </select>
       </td>
       <td><span className={`foil-badge${card.foil ? ' foil-yes' : ''}`}>{card.foil ? '✨ Foil' : 'Regular'}</span></td>
+      <td>
+        <label className="trade-toggle" title={card.forTrade ? 'Listed for trade' : 'Mark for trade'}>
+          <input type="checkbox" checked={card.forTrade ?? false}
+            onChange={e => onUpdate(card.id, { forTrade: e.target.checked })} />
+          <span className={`trade-toggle-label${card.forTrade ? ' trade-active' : ''}`}>
+            {card.forTrade ? '🔄 Trade' : 'Trade'}
+          </span>
+        </label>
+      </td>
       <td className="coll-price">{formatPrice(price)}</td>
       <td className="coll-total">{formatPrice(price != null ? price * card.quantity : null)}</td>
       <td><button className="btn-danger-sm" onClick={() => onRemove(card.id)}>✕</button></td>
@@ -443,7 +452,7 @@ export default function Collection() {
           <div className="coll-table-wrap">
             <table className="coll-table">
               <thead>
-                <tr><th></th><th>Card</th><th>Qty</th><th>Cond.</th><th>Type</th><th>Price</th><th>Total</th><th></th></tr>
+                <tr><th></th><th>Card</th><th>Qty</th><th>Cond.</th><th>Type</th><th>Trade</th><th>Price</th><th>Total</th><th></th></tr>
               </thead>
               <tbody>
                 {sorted.map(card => (
