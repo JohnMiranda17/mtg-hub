@@ -3,7 +3,7 @@ import { useLocation, Link } from 'react-router-dom';
 import { getCardByName, formatPrice, getCardImage } from '../utils/scryfall';
 import { recordSnapshot, getHistory, recordSynergyLink, getSynergyLinks } from '../utils/priceHistory';
 import { usePriceWatchlist } from '../hooks/usePriceWatchlist';
-import CardSearchInput from '../components/CardSearchInput';
+import CardFilterSearch from '../components/CardFilterSearch';
 import PrintingPicker from '../components/PrintingPicker';
 import PriceChart from '../components/PriceChart';
 
@@ -294,21 +294,39 @@ function WatchlistRow({ item, onRemove }) {
 /* ── Prices page ─────────────────────────────────────────────────────────── */
 export default function Prices() {
   const location = useLocation();
-  const [query, setQuery]                       = useState('');
   const [initialCard, setInitialCard]           = useState(null);
   const [selectedPrinting, setSelectedPrinting] = useState(null);
   const [loading, setLoading]                   = useState(false);
   const [error, setError]                       = useState('');
+  const [chartRange, setChartRange]             = useState('all');
   const { watchlist, addToWatchlist, removeFromWatchlist, isWatched } = usePriceWatchlist();
 
   // Auto-search when navigated here from Collection (card name click)
   useEffect(() => {
     const name = location.state?.cardName;
-    if (name) {
-      setQuery(name);
-      doSearch(name);
-    }
+    if (name) doSearch(name);
   }, []);
+
+  // Auto-snapshot all watchlisted cards once per session for chart history
+  useEffect(() => {
+    if (watchlist.length === 0) return;
+    const key = 'mtg-hub:auto-snap';
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    (async () => {
+      for (const item of watchlist) {
+        try {
+          await new Promise(r => setTimeout(r, 120));
+          const card = await getCardByName(item.name);
+          recordSnapshot(
+            card.id,
+            card.prices?.usd      ? parseFloat(card.prices.usd)      : null,
+            card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) : null,
+          );
+        } catch { /* ignore */ }
+      }
+    })();
+  }, [watchlist]);
 
   // Record price snapshot whenever a printing is selected
   useEffect(() => {
@@ -333,8 +351,14 @@ export default function Prices() {
     } finally { setLoading(false); }
   }
 
-  function handleSearch() { doSearch(query); }
-  function handleQuerySelect(name) { setQuery(name); }
+  function handleFilterSelect(card) {
+    setInitialCard(card); setSelectedPrinting(card); setError('');
+    recordSnapshot(
+      card.id,
+      card.prices?.usd      ? parseFloat(card.prices.usd)      : null,
+      card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) : null,
+    );
+  }
 
   const history = selectedPrinting ? getHistory(selectedPrinting.id) : [];
 
@@ -345,18 +369,9 @@ export default function Prices() {
         <p>Live prices from Scryfall (TCGPlayer data). Price history builds up as you browse. Select a printing for its specific price.</p>
       </div>
 
-      <div className="price-search-row">
-        <CardSearchInput
-          value={query}
-          onChange={setQuery}
-          onSelect={handleQuerySelect}
-          placeholder="Search for a card…"
-        />
-        <button className="btn-primary" onClick={handleSearch} disabled={loading || !query.trim()}>
-          {loading ? '…' : 'Look Up'}
-        </button>
-      </div>
-      {error && <p className="form-error">{error}</p>}
+      <CardFilterSearch onSelect={handleFilterSelect} showPrices />
+      {loading && <p className="price-loading">Looking up card…</p>}
+      {error   && <p className="form-error">{error}</p>}
 
       {initialCard && (
         <div className="price-printings-section">
@@ -382,10 +397,20 @@ export default function Prices() {
           {/* Price history chart */}
           {history.length > 0 && (
             <div className="price-insights-section">
-              <h3 className="insights-section-title">📈 Price History</h3>
-              <PriceChart history={history} foil={false} />
+              <div className="price-chart-section-header">
+                <h3 className="insights-section-title">📈 Price History</h3>
+                <div className="chart-range-selector">
+                  {[['1m','1M'],['3m','3M'],['all','All']].map(([val, label]) => (
+                    <button key={val}
+                      className={`chart-range-btn${chartRange === val ? ' active' : ''}`}
+                      onClick={() => setChartRange(val)}
+                    >{label}</button>
+                  ))}
+                </div>
+              </div>
+              <PriceChart history={history} foil={false} range={chartRange} />
               {history.some(s => s.priceFoil != null) && (
-                <PriceChart history={history} foil={true} />
+                <PriceChart history={history} foil={true} range={chartRange} />
               )}
             </div>
           )}

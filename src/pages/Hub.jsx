@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 const TOOLS = [
   {
     to: '/helper',
-    icon: '🔍',
-    name: 'Rules Reference',
-    description: 'Look up any keyword, ability, card type, mana color, turn phase, or game rule. Built for players new to the game.',
+    icon: '🃏',
+    name: 'MTG Helper',
+    description: 'Rules reference, board state analysis, and AI rules Q&A — all in one place. Keywords, turn structure, combat, zones, and more.',
     color: '#c9a84c',
   },
   {
@@ -21,13 +21,6 @@ const TOOLS = [
     name: 'Price Tracker',
     description: 'Search any card and see live market prices from Scryfall. Build a watchlist of cards you\'re buying or selling.',
     color: '#4ac97a',
-  },
-  {
-    to: '/board',
-    icon: '⚔️',
-    name: 'Board State Analyzer',
-    description: 'Describe your board state in text. The analyzer tells you what instant-speed actions are available and flags cards that restrict interaction.',
-    color: '#c9604a',
   },
 ];
 

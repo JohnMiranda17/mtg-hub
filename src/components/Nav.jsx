@@ -3,11 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import { socialEnabled } from '../lib/supabase';
 
 const MAIN_LINKS = [
-  { to: '/',           label: '🏠 Hub',            end: true },
-  { to: '/helper',     label: '🔍 Reference'              },
-  { to: '/collection', label: '📦 Collection'             },
-  { to: '/prices',     label: '💰 Prices'                 },
-  { to: '/board',      label: '⚔️ Board'                  },
+  { to: '/',           label: '🏠 Hub',       end: true },
+  { to: '/helper',     label: '🃏 Helper'               },
+  { to: '/collection', label: '📦 Collection'           },
+  { to: '/prices',     label: '💰 Prices'               },
 ];
 
 const SOCIAL_LINKS = [

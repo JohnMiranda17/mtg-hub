@@ -37,8 +37,12 @@ export async function getPrintings(card) {
 }
 
 export async function searchCards(query) {
-  const data = await sfetch(`${BASE}/cards/search?q=${encodeURIComponent(query)}&order=name`);
-  return data.data ?? [];
+  const url = `${BASE}/cards/search?q=${encodeURIComponent(query)}&order=name`;
+  const res = await fetch(url);
+  if (res.status === 404) return { data: [], total: 0 };
+  if (!res.ok) throw new Error(`Scryfall ${res.status}`);
+  const json = await res.json();
+  return { data: json.data ?? [], total: json.total_cards ?? 0 };
 }
 
 export function formatPrice(usd) {

@@ -5,6 +5,7 @@ import { useCollection } from '../hooks/useCollection';
 import { getCardByName, getCardById, getCardBySetNumber, formatPrice, getCardImage } from '../utils/scryfall';
 import { parseTextImport, parseCsvImport } from '../utils/importParser';
 import CardSearchInput from '../components/CardSearchInput';
+import CardFilterSearch from '../components/CardFilterSearch';
 import PrintingPicker from '../components/PrintingPicker';
 
 const CONDITIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
@@ -55,17 +56,23 @@ function AddCardForm({ onAdd }) {
   const [foil, setFoil]                         = useState(false);
   const [adding, setAdding]                     = useState(false);
   const [error, setError]                       = useState('');
+  const [browseOpen, setBrowseOpen]             = useState(false);
 
   async function handleSelect(selectedName) {
-    setName(selectedName);
     setInitialCard(null); setSelectedPrinting(null); setError('');
     setFetchingCard(true);
     try {
       const card = await getCardByName(selectedName);
       setInitialCard(card); setSelectedPrinting(card);
+      setName('');
     } catch {
       setError(`"${selectedName}" not found on Scryfall.`);
     } finally { setFetchingCard(false); }
+  }
+
+  function handleBrowseSelect(card) {
+    setInitialCard(card); setSelectedPrinting(card);
+    setError(''); setBrowseOpen(false);
   }
 
   function handleNameChange(n) {
@@ -101,6 +108,17 @@ function AddCardForm({ onAdd }) {
           {adding ? '…' : '+ Add'}
         </button>
       </div>
+
+      <button className="btn-ghost-sm coll-browse-toggle" onClick={() => setBrowseOpen(o => !o)}>
+        {browseOpen ? '▲ Hide filter search' : '🔍 Browse by set / color / type'}
+      </button>
+
+      {browseOpen && (
+        <div className="coll-browse-panel">
+          <CardFilterSearch onSelect={handleBrowseSelect} />
+        </div>
+      )}
+
       {fetchingCard && <p className="printings-loading">Looking up card…</p>}
       {initialCard && (
         <PrintingPicker card={initialCard} selectedId={selectedPrinting?.id} onSelect={setSelectedPrinting} />
@@ -197,25 +215,37 @@ function CollectionRow({ card, onUpdate, onRemove, onChangePrinting }) {
 function ImportModal({ onClose, onImportCards }) {
   const [tab, setTab]           = useState('text');
   const [rawText, setRawText]   = useState('');
+  const [fileName, setFileName] = useState('');
   const [parsed, setParsed]     = useState(null);
   const [step, setStep]         = useState('input');
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [failed, setFailed]     = useState([]);
   const [addedCount, setAddedCount] = useState(0);
+  const [dragging, setDragging] = useState(false);
 
-  function switchTab(t) { setTab(t); setRawText(''); setParsed(null); }
+  function switchTab(t) { setTab(t); setRawText(''); setParsed(null); setFileName(''); }
 
   function handleParse() {
     const entries = tab === 'text' ? parseTextImport(rawText) : parseCsvImport(rawText);
     setParsed(entries);
   }
 
-  function handleFile(e) {
-    const file = e.target.files[0];
+  function loadFile(file) {
     if (!file) return;
+    const isCsv = file.name.toLowerCase().endsWith('.csv');
+    setTab(isCsv ? 'csv' : 'text');
+    setFileName(file.name);
+    setParsed(null);
     const reader = new FileReader();
-    reader.onload = evt => { setRawText(evt.target.result); setParsed(null); };
+    reader.onload = evt => setRawText(evt.target.result);
     reader.readAsText(file);
+  }
+
+  function handleFile(e) { loadFile(e.target.files[0]); }
+
+  function handleDrop(e) {
+    e.preventDefault(); setDragging(false);
+    loadFile(e.dataTransfer.files[0]);
   }
 
   async function handleImport() {
@@ -267,31 +297,56 @@ function ImportModal({ onClose, onImportCards }) {
 
         {step === 'input' && (
           <>
+            {/* ── Drag-and-drop zone ── */}
+            <div
+              className={`import-drop-zone${dragging ? ' import-drop-active' : ''}`}
+              onDragOver={e => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+            >
+              <span className="import-drop-icon">📂</span>
+              <span className="import-drop-text">
+                {fileName
+                  ? <><strong>{fileName}</strong> loaded</>
+                  : <>Drop a <strong>.txt</strong> or <strong>.csv</strong> file here, or</>}
+              </span>
+              <label className="import-file-label import-file-label-sm">
+                <input type="file" accept=".txt,.csv,.dec,.cod" className="import-file-input" onChange={handleFile} />
+                Browse…
+              </label>
+            </div>
+
             <div className="modal-tabs">
               <button className={`modal-tab${tab === 'text' ? ' modal-tab-active' : ''}`}
-                onClick={() => switchTab('text')}>Paste Text</button>
+                onClick={() => switchTab('text')}>Text / Paste</button>
               <button className={`modal-tab${tab === 'csv' ? ' modal-tab-active' : ''}`}
-                onClick={() => switchTab('csv')}>CSV File</button>
+                onClick={() => switchTab('csv')}>CSV</button>
             </div>
             <div className="modal-body">
               {tab === 'text' && (
                 <>
-                  <p className="import-hint">Supports Moxfield, MTG Arena, MTGO, Archidekt, and any standard format.</p>
+                  <p className="import-hint">
+                    Paste a deck list <em>or</em> upload a <code>.txt</code> file above. Supports Moxfield, MTG Arena, MTGO, Archidekt, and similar formats.
+                  </p>
                   <pre className="import-format-example">{`4 Lightning Bolt (M11) 115\n2 Counterspell (TSB) 2\n1 Black Lotus *F*\nSB: 2 Tormod's Crypt`}</pre>
                   <textarea className="import-textarea" value={rawText}
-                    onChange={e => { setRawText(e.target.value); setParsed(null); }}
+                    onChange={e => { setRawText(e.target.value); setParsed(null); setFileName(''); }}
                     placeholder={"4 Lightning Bolt (M11) 115\n2 Counterspell\n4 Forest"}
-                    rows={10} spellCheck={false} />
+                    rows={8} spellCheck={false} />
                 </>
               )}
               {tab === 'csv' && (
                 <>
-                  <p className="import-hint">Upload a Moxfield CSV export. Required columns: <code>Count, Name, Edition, Condition, Language, Foil</code></p>
-                  <label className="import-file-label">
-                    <input type="file" accept=".csv,.txt" className="import-file-input" onChange={handleFile} />
-                    Choose CSV file
-                  </label>
-                  {rawText && <p className="import-file-loaded">✓ File loaded — {rawText.split('\n').filter(l => l.trim()).length} lines</p>}
+                  <p className="import-hint">
+                    Upload a <code>.csv</code> file above, or paste CSV content below. Required columns: <code>Count</code>, <code>Name</code>. Optional: <code>Edition</code>, <code>Condition</code>, <code>Foil</code>.
+                  </p>
+                  {rawText
+                    ? <p className="import-file-loaded">✓ {fileName || 'Content'} — {rawText.split('\n').filter(l => l.trim()).length} lines</p>
+                    : <textarea className="import-textarea" value={rawText}
+                        onChange={e => { setRawText(e.target.value); setParsed(null); }}
+                        placeholder={"Count,Name,Edition,Condition,Foil\n4,Lightning Bolt,m11,NM,"}
+                        rows={8} spellCheck={false} />
+                  }
                 </>
               )}
               {parsed !== null && (

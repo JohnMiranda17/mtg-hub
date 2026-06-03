@@ -15,9 +15,13 @@ function shortDate(iso) {
   return `${parseInt(m)}/${parseInt(d)}`;
 }
 
-export default function PriceChart({ history, foil = false }) {
-  // Use foil price when available and requested, fall back to normal
-  const points = history
+export default function PriceChart({ history, foil = false, range = 'all' }) {
+  const cutoff =
+    range === '1m' ? new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10) :
+    range === '3m' ? new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10) :
+    null;
+
+  const points = (cutoff ? history.filter(s => s.date >= cutoff) : history)
     .map(s => ({ date: s.date, price: foil ? (s.priceFoil ?? s.price) : (s.price ?? s.priceFoil) }))
     .filter(p => p.price != null);
 
@@ -32,15 +36,15 @@ export default function PriceChart({ history, foil = false }) {
     );
   }
 
-  const prices  = points.map(p => p.price);
-  const minP    = Math.min(...prices);
-  const maxP    = Math.max(...prices);
-  const range   = maxP - minP || 1;
-  const innerW  = W - PAD.left - PAD.right;
-  const innerH  = H - PAD.top - PAD.bottom;
+  const prices     = points.map(p => p.price);
+  const minP       = Math.min(...prices);
+  const maxP       = Math.max(...prices);
+  const priceRange = maxP - minP || 1;
+  const innerW     = W - PAD.left - PAD.right;
+  const innerH     = H - PAD.top - PAD.bottom;
 
   function toX(i) { return PAD.left + (i / (points.length - 1)) * innerW; }
-  function toY(p) { return PAD.top + innerH - ((p - minP) / range) * innerH; }
+  function toY(p) { return PAD.top + innerH - ((p - minP) / priceRange) * innerH; }
 
   const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(p.price).toFixed(1)}`).join(' ');
 
@@ -65,7 +69,7 @@ export default function PriceChart({ history, foil = false }) {
         {/* Y grid lines */}
         {[0, 0.5, 1].map(t => {
           const y = PAD.top + innerH * (1 - t);
-          const v = minP + range * t;
+          const v = minP + priceRange * t;
           return (
             <g key={t}>
               <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y}
