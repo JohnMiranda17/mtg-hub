@@ -4,11 +4,12 @@ import '@testing-library/jest-dom';
 import CardFilterSearch from '../components/CardFilterSearch';
 
 vi.mock('../utils/scryfall', () => ({
-  searchCards: vi.fn(),
+  searchCards:  vi.fn(),
   getCardImage: vi.fn(() => null),
+  autocomplete: vi.fn(),
 }));
 
-import { searchCards } from '../utils/scryfall';
+import { searchCards, autocomplete } from '../utils/scryfall';
 
 const MOCK_CARD = {
   id: 'abc123',
@@ -20,6 +21,7 @@ const MOCK_CARD = {
 
 beforeEach(() => {
   searchCards.mockResolvedValue({ data: [], total: 0 });
+  autocomplete.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -134,4 +136,76 @@ describe('CardFilterSearch', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
     await waitFor(() => screen.getByText('$1.50'));
   });
+});
+
+describe('CardFilterSearch — autocomplete', () => {
+  // These tests use real timers since the 200ms debounce is async.
+  // autocomplete mock resolves synchronously, so waitFor catches it quickly.
+  beforeEach(() => {
+    searchCards.mockResolvedValue({ data: [], total: 0 });
+    autocomplete.mockResolvedValue([]);
+  });
+
+  afterEach(() => vi.clearAllMocks());
+
+  test('shows suggestions after debounce when 2+ chars typed', async () => {
+    autocomplete.mockResolvedValue(['Lightning Bolt', 'Lightning Strike', 'Lightning Helix']);
+    render(<CardFilterSearch onSelect={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText(/Name or Scryfall syntax/i), {
+      target: { value: 'li' },
+    });
+    await waitFor(() => screen.getByText('Lightning Bolt'), { timeout: 1000 });
+    expect(screen.getByText('Lightning Strike')).toBeInTheDocument();
+  }, 3000);
+
+  test('does not call autocomplete for fewer than 2 chars', async () => {
+    render(<CardFilterSearch onSelect={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText(/Name or Scryfall syntax/i), {
+      target: { value: 'l' },
+    });
+    // Give debounce time to fire if it were going to
+    await new Promise(r => setTimeout(r, 300));
+    expect(autocomplete).not.toHaveBeenCalled();
+  }, 3000);
+
+  test('does not call autocomplete when query contains Scryfall operators', async () => {
+    render(<CardFilterSearch onSelect={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText(/Name or Scryfall syntax/i), {
+      target: { value: 't:instant' },
+    });
+    await new Promise(r => setTimeout(r, 300));
+    expect(autocomplete).not.toHaveBeenCalled();
+  }, 3000);
+
+  test('clicking a suggestion triggers a search with that name', async () => {
+    autocomplete.mockResolvedValue(['Lightning Bolt', 'Lightning Strike']);
+    render(<CardFilterSearch onSelect={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText(/Name or Scryfall syntax/i), {
+      target: { value: 'li' },
+    });
+    await waitFor(() => screen.getByText('Lightning Bolt'), { timeout: 1000 });
+    fireEvent.mouseDown(screen.getByText('Lightning Bolt'));
+    await waitFor(() => expect(searchCards).toHaveBeenCalledWith('Lightning Bolt'));
+  }, 3000);
+
+  test('ArrowDown then Enter selects the highlighted suggestion', async () => {
+    autocomplete.mockResolvedValue(['Lightning Bolt', 'Lightning Strike']);
+    render(<CardFilterSearch onSelect={() => {}} />);
+    const input = screen.getByPlaceholderText(/Name or Scryfall syntax/i);
+    fireEvent.change(input, { target: { value: 'li' } });
+    await waitFor(() => screen.getByText('Lightning Bolt'), { timeout: 1000 });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => expect(searchCards).toHaveBeenCalledWith('Lightning Bolt'));
+  }, 3000);
+
+  test('Escape closes the suggestions list', async () => {
+    autocomplete.mockResolvedValue(['Lightning Bolt']);
+    render(<CardFilterSearch onSelect={() => {}} />);
+    const input = screen.getByPlaceholderText(/Name or Scryfall syntax/i);
+    fireEvent.change(input, { target: { value: 'li' } });
+    await waitFor(() => screen.getByText('Lightning Bolt'), { timeout: 1000 });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByText('Lightning Bolt')).not.toBeInTheDocument());
+  }, 3000);
 });
