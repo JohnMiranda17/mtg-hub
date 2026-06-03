@@ -44,8 +44,7 @@ export default function Helper() {
         normalize(kw.description).includes(q) ||
         normalize(kw.reminder).includes(q) ||
         normalize(kw.category).includes(q) ||
-        normalize(kw.type).includes(q) ||
-        (kw.tip && normalize(kw.tip).includes(q))
+        normalize(kw.type).includes(q)
       );
     });
   }, [query, category]);

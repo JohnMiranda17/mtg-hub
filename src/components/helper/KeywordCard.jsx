@@ -42,12 +42,6 @@ export default function KeywordCard({ keyword }) {
       {expanded && (
         <div className="keyword-details">
           <p className="keyword-description">{keyword.description}</p>
-          {keyword.tip && (
-            <div className="keyword-tip">
-              <span className="tip-label">💡 Tip</span>
-              <span>{keyword.tip}</span>
-            </div>
-          )}
         </div>
       )}
     </div>
