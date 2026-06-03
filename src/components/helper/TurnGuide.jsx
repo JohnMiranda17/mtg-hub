@@ -35,12 +35,6 @@ export default function TurnGuide() {
                     {isOpen && (
                       <div className="step-details">
                         <p>{step.description}</p>
-                        {step.tip && (
-                          <div className="keyword-tip">
-                            <span className="tip-label">💡 Tip</span>
-                            <span>{step.tip}</span>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>

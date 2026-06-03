@@ -42,12 +42,6 @@ export default function CardTypesGuide() {
                       </div>
                     )}
                   </div>
-                  {ct.tips.map((tip, i) => (
-                    <div className="keyword-tip" key={i}>
-                      <span className="tip-label">💡 Tip</span>
-                      <span>{tip}</span>
-                    </div>
-                  ))}
                 </div>
               )}
             </div>
@@ -67,10 +61,6 @@ export default function CardTypesGuide() {
           <div key={st.name} className="supertype-card">
             <strong className="supertype-name">{st.name}</strong>
             <p>{st.description}</p>
-            <div className="keyword-tip">
-              <span className="tip-label">💡 Tip</span>
-              <span>{st.tip}</span>
-            </div>
           </div>
         ))}
       </div>

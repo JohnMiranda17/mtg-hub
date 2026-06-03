@@ -105,10 +105,6 @@ export default function ConceptsGuide({ activeTab }) {
                 {isOpen && (
                   <div className="zone-details">
                     <p>{z.description}</p>
-                    <div className="keyword-tip">
-                      <span className="tip-label">💡 Tip</span>
-                      <span>{z.tip}</span>
-                    </div>
                   </div>
                 )}
               </div>
