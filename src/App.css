@@ -585,6 +585,18 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .backlink-name { color: var(--gold); text-decoration: none; }
 .backlink-name:hover { text-decoration: underline; }
 
+/* ── Commander synergy rating ─────────────────────────────────────────────── */
+.cmdr-syn-list { display: flex; flex-direction: column; gap: .55rem; }
+.cmdr-syn-item { background: var(--bg3); border-radius: 6px; padding: .5rem .75rem; }
+.cmdr-syn-row  { align-items: center; display: flex; gap: .5rem; flex-wrap: wrap; }
+.cmdr-syn-name { flex: 1; font-size: .85rem; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmdr-syn-pct  { color: var(--text-dim); font-size: .8rem; font-weight: 700; }
+.cmdr-syn-sub  { color: var(--text-dim); font-size: .73rem; margin-top: .2rem; }
+.cmdr-syn-badge { border-radius: 4px; font-size: .68rem; font-weight: 700; padding: .1rem .4rem; white-space: nowrap; }
+.cmdr-rating-staple { background: rgba(74,201,122,.18);  color: #4ac97a; }
+.cmdr-rating-good   { background: rgba(201,168,76,.18);  color: var(--gold); }
+.cmdr-rating-situ   { background: rgba(255,255,255,.07); color: var(--text-dim); }
+
 /* ── Binders ──────────────────────────────────────────────────────────────── */
 .binders-toolbar { align-items: flex-start; display: flex; gap: 1rem; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; }
 .binder-create-btn { white-space: nowrap; }

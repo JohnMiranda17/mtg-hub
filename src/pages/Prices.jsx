@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { getCardByName, formatPrice, getCardImage } from '../utils/scryfall';
 import { recordSnapshot, getHistory, recordSynergyLink, getSynergyLinks } from '../utils/priceHistory';
 import { usePriceWatchlist } from '../hooks/usePriceWatchlist';
+import { useDecks } from '../hooks/useDecks';
 import CardFilterSearch from '../components/CardFilterSearch';
 import PrintingPicker from '../components/PrintingPicker';
 import PriceChart from '../components/PriceChart';
@@ -87,41 +87,12 @@ function toEdhrecSlug(name) {
     .replace(/^-+|-+$/g, '');
 }
 
-function SynCardTooltip({ img, name, anchorEl }) {
-  const [pos, setPos] = useState(null);
-
-  useEffect(() => {
-    if (!anchorEl) { setPos(null); return; }
-    const r = anchorEl.getBoundingClientRect();
-    setPos({ x: r.left + r.width / 2, y: r.top + window.scrollY });
-  }, [anchorEl]);
-
-  if (!img || !pos) return null;
-  return createPortal(
-    <div
-      style={{
-        position:     'absolute',
-        left:         pos.x,
-        top:          pos.y - 8,
-        transform:    'translate(-50%, -100%)',
-        zIndex:       10000,
-        pointerEvents:'none',
-        filter:       'drop-shadow(0 6px 24px rgba(0,0,0,.85))',
-      }}
-    >
-      <img src={img} alt={name} style={{ width: 200, borderRadius: 8, display: 'block' }} />
-    </div>,
-    document.body
-  );
-}
-
 function EdhrecSynergies({ card }) {
   const [synCards, setSynCards] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
-  const [hoveredEl, setHoveredEl]   = useState(null);
-  const [hoveredImg, setHoveredImg] = useState(null);
-  const [hoveredName, setHoveredName] = useState('');
+  // hovered: { img, name, x, y } where x/y are viewport coords from getBoundingClientRect
+  const [hovered, setHovered] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -212,7 +183,17 @@ function EdhrecSynergies({ card }) {
         </a>
       </div>
       <p className="insights-sub">Cards commonly played alongside <strong>{card.name}</strong>.</p>
-      <SynCardTooltip img={hoveredImg} name={hoveredName} anchorEl={hoveredEl} />
+      {/* Hover tooltip — position:fixed escapes parent overflow/border-radius clipping
+          without needing createPortal (which has Rolldown bundling issues). */}
+      {hovered?.img && (
+        <div style={{
+          position: 'fixed', left: hovered.x, top: hovered.y - 8,
+          transform: 'translate(-50%,-100%)', zIndex: 10000,
+          pointerEvents: 'none', filter: 'drop-shadow(0 6px 24px rgba(0,0,0,.85))',
+        }}>
+          <img src={hovered.img} alt={hovered.name} style={{ width: 200, borderRadius: 8, display: 'block' }} />
+        </div>
+      )}
       <div className="syn-cards-grid">
         {synCards.map((c, i) => (
           <Link
@@ -220,8 +201,11 @@ function EdhrecSynergies({ card }) {
             to="/prices"
             state={{ cardName: c.name }}
             className="syn-card"
-            onMouseEnter={e => { setHoveredEl(e.currentTarget); setHoveredImg(c.img); setHoveredName(c.name); }}
-            onMouseLeave={() => { setHoveredEl(null); setHoveredImg(null); }}
+            onMouseEnter={e => {
+              const r = e.currentTarget.getBoundingClientRect();
+              setHovered({ img: c.img, name: c.name, x: r.left + r.width / 2, y: r.top });
+            }}
+            onMouseLeave={() => setHovered(null)}
           >
             {c.img
               ? <img src={c.img} alt={c.name} className="syn-card-img" loading="lazy" />
@@ -235,6 +219,110 @@ function EdhrecSynergies({ card }) {
           </Link>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ── Deck commander synergy rating ──────────────────────────────────────── */
+function DeckCommanderSynergy({ card }) {
+  const { decks } = useDecks();
+  const [synergies, setSynergies] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // Commanders designated in the user's Commander-format decks
+  const commanderDecks = useMemo(() =>
+    decks
+      .filter(d => d.format === 'commander')
+      .flatMap(d => {
+        const cmdr = d.cards.find(c => c.isCommander);
+        return cmdr ? [{ deckName: d.name, commanderName: cmdr.cardName }] : [];
+      }),
+    [decks]
+  );
+
+  useEffect(() => {
+    if (!card || commanderDecks.length === 0) { setSynergies([]); return; }
+
+    let cancelled = false;
+    setLoading(true);
+    setSynergies(null);
+
+    async function load() {
+      const slug = toEdhrecSlug(card.name);
+      const data = await fetch(`https://json.edhrec.com/pages/cards/${slug}.json`).then(r => r.json());
+      if (cancelled) return;
+
+      const lists = data?.container?.json_dict?.cardlists ?? [];
+
+      // Commander cardviews have URLs starting with /commanders/
+      // Each entry's inclusion/num_decks tells us what % of that commander's decks play this card
+      const edhCmdMap = {};
+      for (const list of lists) {
+        for (const view of list.cardviews ?? []) {
+          if ((view.url ?? '').startsWith('/commanders/') && view.name) {
+            const pct = view.num_decks > 0
+              ? Math.round((view.inclusion / view.num_decks) * 100)
+              : 0;
+            edhCmdMap[view.name.toLowerCase()] = { pct, inclusion: view.inclusion ?? 0, numDecks: view.num_decks ?? 0 };
+          }
+        }
+      }
+
+      const results = commanderDecks
+        .map(({ deckName, commanderName }) => {
+          const e = edhCmdMap[commanderName.toLowerCase()];
+          if (!e) return null;
+          return { deckName, commanderName, ...e };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.pct - a.pct);
+
+      if (!cancelled) setSynergies(results);
+    }
+
+    load()
+      .catch(() => { if (!cancelled) setSynergies([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [card?.id, commanderDecks]);
+
+  if (commanderDecks.length === 0) return null;
+
+  const ratingFor = pct =>
+    pct >= 70 ? { label: 'Staple',      cls: 'cmdr-rating-staple' } :
+    pct >= 40 ? { label: 'Good Fit',    cls: 'cmdr-rating-good'   } :
+                { label: 'Situational', cls: 'cmdr-rating-situ'   };
+
+  return (
+    <div className="insights-panel">
+      <div className="insights-header">
+        <span className="insights-title">🃏 Your Commander Synergy</span>
+      </div>
+      <p className="insights-sub">How often EDHREC lists this card with your commanders.</p>
+      {loading && <p className="insights-loading">Checking your commanders…</p>}
+      {synergies?.length === 0 && (
+        <p className="insights-empty">None of your designated commanders appear in EDHREC's data for this card.</p>
+      )}
+      {synergies?.length > 0 && (
+        <div className="cmdr-syn-list">
+          {synergies.map((s, i) => {
+            const r = ratingFor(s.pct);
+            return (
+              <div key={i} className="cmdr-syn-item">
+                <div className="cmdr-syn-row">
+                  <span className="cmdr-syn-name">{s.commanderName}</span>
+                  <span className={`cmdr-syn-badge ${r.cls}`}>{r.label}</span>
+                  <span className="cmdr-syn-pct">{s.pct}%</span>
+                </div>
+                <div className="cmdr-syn-sub">
+                  {s.inclusion.toLocaleString()} of {s.numDecks.toLocaleString()} decks · "{s.deckName}"
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -483,6 +571,11 @@ export default function Prices() {
           {/* Synergy back-references (cards that led here) */}
           <div className="price-insights-section">
             <SynergyBackLinks card={selectedPrinting} />
+          </div>
+
+          {/* Deck commander synergy rating */}
+          <div className="price-insights-section">
+            <DeckCommanderSynergy card={selectedPrinting} />
           </div>
 
           {/* Community & synergy insights */}
