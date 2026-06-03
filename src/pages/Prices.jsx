@@ -8,61 +8,71 @@ import PrintingPicker from '../components/PrintingPicker';
 import PriceChart from '../components/PriceChart';
 
 /* ── Reddit Mentions ─────────────────────────────────────────────────────── */
-function RedditMentions({ cardName }) {
-  const [posts, setPosts]   = useState(null);
+const REDDIT_SUBS = ['magicTCG', 'EDH', 'mtgfinance', 'spikes'];
+
+function SubredditPosts({ cardName, sub }) {
+  const [posts, setPosts]     = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState('');
+  const [error, setError]     = useState('');
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true); setError(''); setPosts(null);
 
-    const url = `https://www.reddit.com/r/magicTCG/search.json?q=${encodeURIComponent(cardName)}&restrict_sr=1&sort=new&t=month&limit=5`;
+    const url = `https://www.reddit.com/r/${sub}/search.json?q=${encodeURIComponent(cardName)}&restrict_sr=1&sort=new&t=month&limit=5`;
     fetch(url)
       .then(r => r.json())
       .then(data => {
         if (cancelled) return;
         const children = data?.data?.children ?? [];
         setPosts(children.map(c => ({
-          title:   c.data.title,
-          score:   c.data.score,
-          url:     `https://reddit.com${c.data.permalink}`,
-          created: c.data.created_utc,
+          title: c.data.title,
+          score: c.data.score,
+          url:   `https://reddit.com${c.data.permalink}`,
         })));
       })
       .catch(() => { if (!cancelled) setError('Could not load Reddit data.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [cardName]);
+  }, [cardName, sub]);
 
-  const count = posts?.length ?? 0;
-  const demand =
-    count >= 4 ? { label: 'High community interest', cls: 'demand-high' } :
-    count >= 2 ? { label: 'Some community discussion', cls: 'demand-med' } :
-                 { label: 'Low community activity', cls: 'demand-low' };
+  if (loading) return <p className="insights-loading">Checking r/{sub}…</p>;
+  if (error)   return <p className="insights-error">{error}</p>;
+  if (!posts || posts.length === 0) return <p className="insights-empty">No recent posts in r/{sub} for "{cardName}".</p>;
+
+  return (
+    <ul className="reddit-posts">
+      {posts.map((p, i) => (
+        <li key={i} className="reddit-post">
+          <a href={p.url} target="_blank" rel="noreferrer" className="reddit-post-title">{p.title}</a>
+          <span className="reddit-post-score">▲ {p.score}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function RedditMentions({ cardName }) {
+  const [activeSub, setActiveSub] = useState(REDDIT_SUBS[0]);
 
   return (
     <div className="insights-panel">
       <div className="insights-header">
-        <span className="insights-title">📣 r/magicTCG — last 30 days</span>
-        {!loading && posts && (
-          <span className={`demand-badge ${demand.cls}`}>{demand.label}</span>
-        )}
+        <span className="insights-title">📣 Reddit — last 30 days</span>
       </div>
-      {loading && <p className="insights-loading">Checking Reddit…</p>}
-      {error   && <p className="insights-error">{error}</p>}
-      {posts && posts.length === 0 && <p className="insights-empty">No recent posts found for "{cardName}".</p>}
-      {posts && posts.length > 0 && (
-        <ul className="reddit-posts">
-          {posts.map((p, i) => (
-            <li key={i} className="reddit-post">
-              <a href={p.url} target="_blank" rel="noreferrer" className="reddit-post-title">{p.title}</a>
-              <span className="reddit-post-score">▲ {p.score}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="reddit-sub-tabs">
+        {REDDIT_SUBS.map(sub => (
+          <button
+            key={sub}
+            className={`reddit-sub-tab${activeSub === sub ? ' active' : ''}`}
+            onClick={() => setActiveSub(sub)}
+          >
+            r/{sub}
+          </button>
+        ))}
+      </div>
+      <SubredditPosts cardName={cardName} sub={activeSub} />
     </div>
   );
 }
@@ -298,7 +308,7 @@ export default function Prices() {
   const [selectedPrinting, setSelectedPrinting] = useState(null);
   const [loading, setLoading]                   = useState(false);
   const [error, setError]                       = useState('');
-  const [chartRange, setChartRange]             = useState('all');
+  const [chartRange, setChartRange]             = useState('90d');
   const { watchlist, addToWatchlist, removeFromWatchlist, isWatched } = usePriceWatchlist();
 
   // Auto-search when navigated here from Collection (card name click)
@@ -400,7 +410,7 @@ export default function Prices() {
               <div className="price-chart-section-header">
                 <h3 className="insights-section-title">📈 Price History</h3>
                 <div className="chart-range-selector">
-                  {[['1m','1M'],['3m','3M'],['all','All']].map(([val, label]) => (
+                  {[['30d','30D'],['90d','90D'],['6m','6M'],['1yr','1YR']].map(([val, label]) => (
                     <button key={val}
                       className={`chart-range-btn${chartRange === val ? ' active' : ''}`}
                       onClick={() => setChartRange(val)}
@@ -408,10 +418,7 @@ export default function Prices() {
                   ))}
                 </div>
               </div>
-              <PriceChart history={history} foil={false} range={chartRange} />
-              {history.some(s => s.priceFoil != null) && (
-                <PriceChart history={history} foil={true} range={chartRange} />
-              )}
+              <PriceChart history={history} range={chartRange} />
             </div>
           )}
 
