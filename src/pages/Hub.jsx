@@ -5,7 +5,7 @@ const TOOLS = [
     to: '/helper',
     icon: '🃏',
     name: 'MTG Helper',
-    description: 'Rules reference, board state analysis, and AI rules Q&A — all in one place. Keywords, turn structure, combat, zones, and more.',
+    description: 'Rules reference and AI rules Q&A — keywords, turn structure, combat, zones, and more.',
     color: '#c9a84c',
   },
   {
@@ -21,6 +21,13 @@ const TOOLS = [
     name: 'Price Tracker',
     description: 'Search any card and see live market prices from Scryfall. Build a watchlist of cards you\'re buying or selling.',
     color: '#4ac97a',
+  },
+  {
+    to: '/board-state',
+    icon: '⚔️',
+    name: 'Board State Analyzer',
+    description: 'Analyze a Magic game board state. Describe the battlefield, hand, graveyard, and stack — get interaction and combat analysis.',
+    color: '#9a4ac9',
   },
 ];
 
