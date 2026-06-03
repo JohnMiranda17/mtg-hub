@@ -7,6 +7,8 @@ import { parseTextImport, parseCsvImport } from '../utils/importParser';
 import CardSearchInput from '../components/CardSearchInput';
 import CardFilterSearch from '../components/CardFilterSearch';
 import PrintingPicker from '../components/PrintingPicker';
+import BindersTab from '../components/collection/BindersTab';
+import DecksTab from '../components/collection/DecksTab';
 
 const CONDITIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 
@@ -490,8 +492,15 @@ function ChangePrintingModal({ entry, onClose, onUpdate }) {
 }
 
 /* ── Collection page ───────────────────────────────────────────────────────── */
+const COLL_TABS = [
+  { id: 'cards',   label: '🗂 Cards'   },
+  { id: 'binders', label: '📚 Binders' },
+  { id: 'decks',   label: '🃏 Decks'   },
+];
+
 export default function Collection() {
   const { cards, addCard, updateCard, removeCard, importCards, totalCards, totalValue } = useCollection();
+  const [collTab, setCollTab]         = useState('cards');
   const [sort, setSort]               = useState({ col: 'addedAt', dir: 'desc' });
   const [filter, setFilter]           = useState('');
   const [showImport, setShowImport]   = useState(false);
@@ -528,56 +537,72 @@ export default function Collection() {
         <div className="page-header-row">
           <div>
             <h1>📦 Collection Tracker</h1>
-            <p>Track your physical cards. Click any column header to sort. Click a card name to view prices.</p>
+            <p>Track your physical cards, organize binders, and build validated decks.</p>
           </div>
-          <button className="btn-secondary import-trigger" onClick={() => setShowImport(true)}>
-            ⬆ Import List
-          </button>
+          {collTab === 'cards' && (
+            <button className="btn-secondary import-trigger" onClick={() => setShowImport(true)}>
+              ⬆ Import List
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="coll-stats">
-        <div className="stat-pill">{totalCards.toLocaleString()} cards</div>
-        <div className="stat-pill">{cards.length} unique</div>
-        <div className="stat-pill">Est. value: {formatPrice(totalValue)}</div>
-      </div>
+      <nav className="sub-tab-bar">
+        {COLL_TABS.map(t => (
+          <button key={t.id} className={`sub-tab${collTab === t.id ? ' sub-tab-active' : ''}`}
+            onClick={() => setCollTab(t.id)}>{t.label}</button>
+        ))}
+      </nav>
 
-      <AddCardForm onAdd={addCard} />
+      {collTab === 'binders' && <BindersTab />}
+      {collTab === 'decks'   && <DecksTab />}
 
-      {cards.length > 0 && (
+      {collTab === 'cards' && (
         <>
-          <div className="coll-controls">
-            <input className="filter-input" placeholder="Filter by name…"
-              value={filter} onChange={e => setFilter(e.target.value)} />
+          <div className="coll-stats">
+            <div className="stat-pill">{totalCards.toLocaleString()} cards</div>
+            <div className="stat-pill">{cards.length} unique</div>
+            <div className="stat-pill">Est. value: {formatPrice(totalValue)}</div>
           </div>
-          <div className="coll-table-wrap">
-            <table className="coll-table">
-              <thead>
-                <tr>
-                  <th></th>
-                  <SortTh {...thProps('name')}>Card</SortTh>
-                  <SortTh {...thProps('quantity')} align="center">Qty</SortTh>
-                  <SortTh {...thProps('condition')}>Cond.</SortTh>
-                  <SortTh {...thProps('foil')}>Type</SortTh>
-                  <th>Trade</th>
-                  <SortTh {...thProps('price')} align="right">Price</SortTh>
-                  <SortTh {...thProps('total')} align="right">Total</SortTh>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map(card => (
-                  <CollectionRow key={card.id} card={card} onUpdate={updateCard} onRemove={removeCard}
-                    onChangePrinting={setChangingCard} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
 
-      {cards.length === 0 && (
-        <div className="empty-state"><p>No cards yet — add a card above or import a list.</p></div>
+          <AddCardForm onAdd={addCard} />
+
+          {cards.length > 0 && (
+            <>
+              <div className="coll-controls">
+                <input className="filter-input" placeholder="Filter by name…"
+                  value={filter} onChange={e => setFilter(e.target.value)} />
+              </div>
+              <div className="coll-table-wrap">
+                <table className="coll-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <SortTh {...thProps('name')}>Card</SortTh>
+                      <SortTh {...thProps('quantity')} align="center">Qty</SortTh>
+                      <SortTh {...thProps('condition')}>Cond.</SortTh>
+                      <SortTh {...thProps('foil')}>Type</SortTh>
+                      <th>Trade</th>
+                      <SortTh {...thProps('price')} align="right">Price</SortTh>
+                      <SortTh {...thProps('total')} align="right">Total</SortTh>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.map(card => (
+                      <CollectionRow key={card.id} card={card} onUpdate={updateCard} onRemove={removeCard}
+                        onChangePrinting={setChangingCard} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {cards.length === 0 && (
+            <div className="empty-state"><p>No cards yet — add a card above or import a list.</p></div>
+          )}
+        </>
       )}
 
       {showImport && (
