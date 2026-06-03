@@ -1,59 +1,70 @@
-// SVG mini price chart built from locally-stored daily snapshots.
-// Points accumulate each time the user views the card's price page.
-
-const W = 400; // viewBox width
-const H = 100; // viewBox height
-const PAD = { top: 8, right: 8, bottom: 20, left: 42 };
-
-function fmt(v) {
-  if (v == null) return '—';
-  return `$${Number(v).toFixed(2)}`;
-}
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, Legend,
+} from 'recharts';
 
 function shortDate(iso) {
   const [, m, d] = iso.split('-');
   return `${parseInt(m)}/${parseInt(d)}`;
 }
 
-export default function PriceChart({ history, foil = false, range = 'all' }) {
-  const cutoff =
-    range === '1m' ? new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10) :
-    range === '3m' ? new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10) :
-    null;
+function fmt(v) {
+  return v != null ? `$${Number(v).toFixed(2)}` : '—';
+}
 
-  const points = (cutoff ? history.filter(s => s.date >= cutoff) : history)
-    .map(s => ({ date: s.date, price: foil ? (s.priceFoil ?? s.price) : (s.price ?? s.priceFoil) }))
-    .filter(p => p.price != null);
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="price-chart-tooltip">
+      <div className="pct-date">{label}</div>
+      {payload.map(p => (
+        <div key={p.dataKey} className="pct-row" style={{ color: p.color }}>
+          {p.name}: {fmt(p.value)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function PriceChart({ history, range = '90d' }) {
+  const days =
+    range === '30d' ? 30  :
+    range === '90d' ? 90  :
+    range === '6m'  ? 180 : 365;
+
+  const cutoff = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+
+  const points = history
+    .filter(s => s.date >= cutoff)
+    .map(s => ({
+      label:     shortDate(s.date),
+      price:     s.price     ?? null,
+      priceFoil: s.priceFoil ?? null,
+    }))
+    .filter(p => p.price != null || p.priceFoil != null);
+
+  const hasFoil = points.some(p => p.priceFoil != null);
 
   if (points.length < 2) {
     return (
       <div className="price-chart-wrap">
         <p className="price-chart-empty">
-          Price history builds up as you view this card over time.
-          {points.length === 1 && ` First snapshot: ${fmt(points[0].price)} on ${shortDate(points[0].date)}.`}
+          Not enough snapshots for this range — keep browsing cards to build history.
+          {points.length === 1 && ` (1 snapshot recorded)`}
         </p>
       </div>
     );
   }
 
-  const prices     = points.map(p => p.price);
-  const minP       = Math.min(...prices);
-  const maxP       = Math.max(...prices);
-  const priceRange = maxP - minP || 1;
-  const innerW     = W - PAD.left - PAD.right;
-  const innerH     = H - PAD.top - PAD.bottom;
+  const allPrices = points.flatMap(p => [p.price, hasFoil ? p.priceFoil : null].filter(Boolean));
+  const minY = Math.floor(Math.min(...allPrices) * 0.9 * 100) / 100;
+  const maxY = Math.ceil(Math.max(...allPrices) * 1.1 * 100) / 100;
 
-  function toX(i) { return PAD.left + (i / (points.length - 1)) * innerW; }
-  function toY(p) { return PAD.top + innerH - ((p - minP) / priceRange) * innerH; }
-
-  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(p.price).toFixed(1)}`).join(' ');
-
-  const first    = points[0].price;
-  const last     = points[points.length - 1].price;
-  const delta    = last - first;
-  const deltaPct = ((delta / first) * 100).toFixed(1);
+  const first = points[0].price ?? points[0].priceFoil;
+  const last  = points[points.length - 1].price ?? points[points.length - 1].priceFoil;
+  const delta = last - first;
+  const deltaPct = first ? ((delta / first) * 100).toFixed(1) : '0.0';
   const trending = delta > 0.01 ? 'up' : delta < -0.01 ? 'down' : 'flat';
-  const lineColor = trending === 'up' ? '#4ac97a' : trending === 'down' ? '#e06060' : '#888';
 
   return (
     <div className="price-chart-wrap">
@@ -65,32 +76,47 @@ export default function PriceChart({ history, foil = false, range = 'all' }) {
           {trending !== 'flat' ? `${Math.abs(deltaPct)}% since first view` : 'Stable'}
         </span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="price-chart-svg" preserveAspectRatio="none">
-        {/* Y grid lines */}
-        {[0, 0.5, 1].map(t => {
-          const y = PAD.top + innerH * (1 - t);
-          const v = minP + priceRange * t;
-          return (
-            <g key={t}>
-              <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y}
-                stroke="rgba(255,255,255,.07)" strokeWidth="1" />
-              <text x={PAD.left - 4} y={y + 4} textAnchor="end"
-                fontSize="9" fill="rgba(255,255,255,.45)">{fmt(v)}</text>
-            </g>
-          );
-        })}
-        {/* Price line */}
-        <path d={pathD} fill="none" stroke={lineColor} strokeWidth="2" strokeLinejoin="round" />
-        {/* Area fill */}
-        <path d={`${pathD} L${toX(points.length - 1).toFixed(1)},${(PAD.top + innerH).toFixed(1)} L${PAD.left},${(PAD.top + innerH).toFixed(1)} Z`}
-          fill={lineColor} fillOpacity="0.08" />
-        {/* Start + end dots */}
-        <circle cx={toX(0)} cy={toY(first)} r="3" fill={lineColor} />
-        <circle cx={toX(points.length - 1)} cy={toY(last)} r="3" fill={lineColor} />
-        {/* X axis labels */}
-        <text x={PAD.left} y={H - 4} fontSize="9" fill="rgba(255,255,255,.45)">{shortDate(points[0].date)}</text>
-        <text x={W - PAD.right} y={H - 4} fontSize="9" fill="rgba(255,255,255,.45)" textAnchor="end">{shortDate(points[points.length - 1].date)}</text>
-      </svg>
+      <ResponsiveContainer width="100%" height={180}>
+        <LineChart data={points} margin={{ top: 4, right: 8, bottom: 4, left: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.07)" />
+          <XAxis
+            dataKey="label"
+            tick={{ fill: 'rgba(255,255,255,.45)', fontSize: 10 }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis
+            domain={[minY, maxY]}
+            tickFormatter={v => `$${v.toFixed(2)}`}
+            tick={{ fill: 'rgba(255,255,255,.45)', fontSize: 10 }}
+            tickLine={false}
+            axisLine={false}
+            width={52}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          {hasFoil && <Legend wrapperStyle={{ fontSize: '11px', color: 'rgba(255,255,255,.55)' }} />}
+          <Line
+            type="monotone"
+            dataKey="price"
+            name="Normal"
+            stroke="#4ac97a"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4 }}
+          />
+          {hasFoil && (
+            <Line
+              type="monotone"
+              dataKey="priceFoil"
+              name="Foil"
+              stroke="#c9a84c"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+          )}
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 }
