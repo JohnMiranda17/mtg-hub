@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, Link } from 'react-router-dom';
 import { getCardByName, formatPrice, getCardImage } from '../utils/scryfall';
 import { recordSnapshot, getHistory, recordSynergyLink, getSynergyLinks } from '../utils/priceHistory';
@@ -86,37 +87,95 @@ function toEdhrecSlug(name) {
     .replace(/^-+|-+$/g, '');
 }
 
+function SynCardTooltip({ img, name, anchorEl }) {
+  const [pos, setPos] = useState(null);
+
+  useEffect(() => {
+    if (!anchorEl) { setPos(null); return; }
+    const r = anchorEl.getBoundingClientRect();
+    setPos({ x: r.left + r.width / 2, y: r.top + window.scrollY });
+  }, [anchorEl]);
+
+  if (!img || !pos) return null;
+  return createPortal(
+    <div
+      style={{
+        position:     'absolute',
+        left:         pos.x,
+        top:          pos.y - 8,
+        transform:    'translate(-50%, -100%)',
+        zIndex:       10000,
+        pointerEvents:'none',
+        filter:       'drop-shadow(0 6px 24px rgba(0,0,0,.85))',
+      }}
+    >
+      <img src={img} alt={name} style={{ width: 200, borderRadius: 8, display: 'block' }} />
+    </div>,
+    document.body
+  );
+}
+
 function EdhrecSynergies({ card }) {
   const [synCards, setSynCards] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
+  const [hoveredEl, setHoveredEl]   = useState(null);
+  const [hoveredImg, setHoveredImg] = useState(null);
+  const [hoveredName, setHoveredName] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true); setError(''); setSynCards(null);
 
     const slug = toEdhrecSlug(card.name);
-    fetch(`https://json.edhrec.com/pages/cards/${slug}.json`)
-      .then(r => r.json())
-      .then(data => {
-        if (cancelled) return;
-        // Navigate the EDHREC response tree to find synergy cards
-        const lists = data?.container?.json_dict?.cardlists ?? [];
-        const synergyList = lists.find(l =>
-          l.tag === 'synergy' || (l.header ?? '').toLowerCase().includes('synergy')
-        ) ?? lists[0];
 
-        const views = (synergyList?.cardviews ?? []).slice(0, 8);
-        setSynCards(views);
+    async function load() {
+      // 1. Fetch EDHREC synergy card list (names only — no images in their API)
+      const data = await fetch(`https://json.edhrec.com/pages/cards/${slug}.json`).then(r => r.json());
+      if (cancelled) return;
 
-        // Record synergy links so those cards can reference back to this one
-        for (const v of views) {
-          if (v.sanitized_wo) recordSynergyLink(card, v.sanitized_wo);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setError('EDHREC data unavailable for this card.');
-      })
+      const lists = data?.container?.json_dict?.cardlists ?? [];
+      const synergyList = lists.find(l =>
+        l.tag === 'synergy' || (l.header ?? '').toLowerCase().includes('synergy')
+      ) ?? lists[0];
+
+      const views = (synergyList?.cardviews ?? []).slice(0, 8);
+      if (views.length === 0) { setSynCards([]); setLoading(false); return; }
+
+      // 2. Batch-fetch card images from Scryfall's collection endpoint
+      const names = views.map(v => v.name ?? v.sanitized ?? '').filter(Boolean);
+      const scData = await fetch('https://api.scryfall.com/cards/collection', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ identifiers: names.map(name => ({ name })) }),
+      }).then(r => r.json());
+      if (cancelled) return;
+
+      const byName = {};
+      for (const c of scData.data ?? []) {
+        byName[c.name.toLowerCase()] = c;
+      }
+
+      const enriched = views.map(v => {
+        const name = v.name ?? v.sanitized ?? '';
+        const sc   = byName[name.toLowerCase()];
+        const img  = sc
+          ? (sc.image_uris?.normal ?? sc.card_faces?.[0]?.image_uris?.normal ?? null)
+          : null;
+        return { name, img, price: sc?.prices?.usd ?? null, synPct: v.synergy != null ? Math.round(v.synergy * 100) : null };
+      });
+
+      setSynCards(enriched);
+
+      // Record synergy links for back-reference on other cards
+      for (const v of views) {
+        const slug = v.sanitized ?? v.name;
+        if (slug) recordSynergyLink(card, slug);
+      }
+    }
+
+    load()
+      .catch(() => { if (!cancelled) setError('EDHREC data unavailable for this card.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
@@ -147,41 +206,34 @@ function EdhrecSynergies({ card }) {
     <div className="insights-panel">
       <div className="insights-header">
         <span className="insights-title">♻ EDHREC Synergy Cards</span>
-        <a
-          href={`https://edhrec.com/cards/${toEdhrecSlug(card.name)}`}
-          target="_blank" rel="noreferrer"
-          className="insights-external-link"
-        >
+        <a href={`https://edhrec.com/cards/${toEdhrecSlug(card.name)}`}
+          target="_blank" rel="noreferrer" className="insights-external-link">
           View on EDHREC ↗
         </a>
       </div>
-      <p className="insights-sub">Cards commonly played alongside <strong>{card.name}</strong>. Price movement in this card may affect these.</p>
+      <p className="insights-sub">Cards commonly played alongside <strong>{card.name}</strong>.</p>
+      <SynCardTooltip img={hoveredImg} name={hoveredName} anchorEl={hoveredEl} />
       <div className="syn-cards-grid">
-        {synCards.map((c, i) => {
-          const img    = c.image_uris?.[0];
-          const price  = c.prices?.usd;
-          const synPct = c.synergy != null ? Math.round(c.synergy * 100) : null;
-          const name   = c.name ?? c.sanitized ?? '';
-          return (
-            <Link
-              key={i}
-              to="/prices"
-              state={{ cardName: name }}
-              className="syn-card"
-            >
-              {img && <div className="syn-card-tooltip"><img src={img} alt={name} /></div>}
-              {img
-                ? <img src={img} alt={name} className="syn-card-img" loading="lazy" />
-                : <div className="syn-card-placeholder">{name}</div>
-              }
-              <div className="syn-card-info">
-                <div className="syn-card-name">{name}</div>
-                {price  && <div className="syn-card-price">{formatPrice(price)}</div>}
-                {synPct != null && <div className="syn-card-syn">{synPct > 0 ? '+' : ''}{synPct}% syn</div>}
-              </div>
-            </Link>
-          );
-        })}
+        {synCards.map((c, i) => (
+          <Link
+            key={i}
+            to="/prices"
+            state={{ cardName: c.name }}
+            className="syn-card"
+            onMouseEnter={e => { setHoveredEl(e.currentTarget); setHoveredImg(c.img); setHoveredName(c.name); }}
+            onMouseLeave={() => { setHoveredEl(null); setHoveredImg(null); }}
+          >
+            {c.img
+              ? <img src={c.img} alt={c.name} className="syn-card-img" loading="lazy" />
+              : <div className="syn-card-placeholder">{c.name}</div>
+            }
+            <div className="syn-card-info">
+              <div className="syn-card-name">{c.name}</div>
+              {c.price  && <div className="syn-card-price">{formatPrice(c.price)}</div>}
+              {c.synPct != null && <div className="syn-card-syn">{c.synPct > 0 ? '+' : ''}{c.synPct}% syn</div>}
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   );
@@ -311,11 +363,17 @@ export default function Prices() {
   const [chartRange, setChartRange]             = useState('90d');
   const { watchlist, addToWatchlist, removeFromWatchlist, isWatched } = usePriceWatchlist();
 
-  // Auto-search when navigated here from Collection (card name click)
+  // Auto-search when navigated here from Collection or a synergy card click.
+  // Must re-run when cardName changes so same-page navigation (e.g. clicking
+  // a synergy card while already on /prices) triggers a fresh lookup.
+  const lastAutoSearched = useRef(null);
   useEffect(() => {
     const name = location.state?.cardName;
-    if (name) doSearch(name);
-  }, []);
+    if (name && name !== lastAutoSearched.current) {
+      lastAutoSearched.current = name;
+      doSearch(name);
+    }
+  }, [location.state?.cardName]);
 
   // Auto-snapshot all watchlisted cards once per session for chart history
   useEffect(() => {
