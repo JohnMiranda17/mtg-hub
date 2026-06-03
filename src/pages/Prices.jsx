@@ -158,8 +158,8 @@ function EdhrecSynergies({ card }) {
               to="/prices"
               state={{ cardName: name }}
               className="syn-card"
-              title={name}
             >
+              {img && <div className="syn-card-tooltip"><img src={img} alt={name} /></div>}
               {img
                 ? <img src={img} alt={name} className="syn-card-img" loading="lazy" />
                 : <div className="syn-card-placeholder">{name}</div>
