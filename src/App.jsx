@@ -5,6 +5,7 @@ import Hub          from './pages/Hub';
 import Helper       from './pages/Helper';
 import Collection   from './pages/Collection';
 import Prices       from './pages/Prices';
+import BoardState   from './pages/BoardState';
 import AuthPage     from './pages/Auth';
 import ProfileSetup from './pages/ProfileSetup';
 import Friends      from './pages/Friends';
@@ -28,8 +29,9 @@ function AppRoutes() {
         <Routes>
           <Route path="/"           element={<RequireProfileSetup><Hub /></RequireProfileSetup>} />
           <Route path="/helper"     element={<RequireProfileSetup><Helper /></RequireProfileSetup>} />
-          <Route path="/collection" element={<RequireProfileSetup><Collection /></RequireProfileSetup>} />
-          <Route path="/prices"     element={<RequireProfileSetup><Prices /></RequireProfileSetup>} />
+          <Route path="/collection"  element={<RequireProfileSetup><Collection /></RequireProfileSetup>} />
+          <Route path="/prices"      element={<RequireProfileSetup><Prices /></RequireProfileSetup>} />
+          <Route path="/board-state" element={<RequireProfileSetup><BoardState /></RequireProfileSetup>} />
           <Route path="/feed"       element={<RequireProfileSetup><Feed /></RequireProfileSetup>} />
           <Route path="/friends"    element={<RequireProfileSetup><Friends /></RequireProfileSetup>} />
           <Route path="/trading"    element={<RequireProfileSetup><Trading /></RequireProfileSetup>} />

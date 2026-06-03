@@ -4,7 +4,6 @@ import KeywordCard from '../components/helper/KeywordCard';
 import TurnGuide from '../components/helper/TurnGuide';
 import CardTypesGuide from '../components/helper/CardTypesGuide';
 import ConceptsGuide from '../components/helper/ConceptsGuide';
-import BoardState from './BoardState';
 import RulesChat from './RulesChat';
 import { keywords } from '../data/keywords';
 
@@ -17,7 +16,6 @@ const TABS = [
   { id: 'stack',        label: '📦 The Stack'      },
   { id: 'combat',       label: '⚔️ Combat'         },
   { id: 'deckbuilding', label: '🏗 Deck Building'  },
-  { id: 'board',        label: '📋 Board State'    },
   { id: 'ai-rules',     label: '🤖 Rules AI'       },
 ];
 
@@ -53,7 +51,7 @@ export default function Helper() {
     <div className="page-wrap">
       <div className="page-header" style={{ '--page-color': '#c9a84c' }}>
         <h1>🃏 MTG Helper</h1>
-        <p>Keywords, turn structure, board state analysis, and AI rules Q&A — all in one place.</p>
+        <p>Keywords, turn structure, concepts, and AI rules Q&A — all in one place.</p>
       </div>
 
       <nav className="sub-tab-bar">
@@ -85,7 +83,6 @@ export default function Helper() {
       {(tab === 'mana' || tab === 'zones' || tab === 'stack' || tab === 'combat' || tab === 'deckbuilding') &&
         <ConceptsGuide activeTab={tab} />}
 
-      {tab === 'board'    && <BoardState />}
       {tab === 'ai-rules' && <RulesChat />}
     </div>
   );
