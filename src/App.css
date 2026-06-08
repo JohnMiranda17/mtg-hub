@@ -868,3 +868,6 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .combo-mana { color: var(--text-dim); font-family: monospace; font-size: .82rem; }
 .combo-external-link { align-self: flex-start; color: var(--text-dim); font-size: .75rem; text-decoration: none; }
 .combo-external-link:hover { color: var(--gold); }
+.combo-cors-fallback { align-items: flex-start; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; gap: .75rem; margin: .5rem 0 1rem; padding: 1rem 1.25rem; }
+.combo-cors-msg { color: var(--text-dim); font-size: .85rem; margin: 0; }
+.combo-csb-btn { align-self: flex-start; text-decoration: none; }

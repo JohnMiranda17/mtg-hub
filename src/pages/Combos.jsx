@@ -23,7 +23,20 @@ import CardSearchInput from '../components/CardSearchInput';
  *   - Supports filtering by card count (2-card, 3-card, etc.)
  */
 
-const API_BASE = 'https://backend.commanderspellbook.com';
+/*
+ * CORS note: backend.commanderspellbook.com does not serve Access-Control-Allow-Origin headers
+ * for third-party origins (e.g. GitHub Pages). Direct browser fetches are blocked.
+ *
+ * Solution: deploy a Cloudflare Worker proxy (free, ~10 lines):
+ *   https://developers.cloudflare.com/workers/get-started/guide/
+ *   Worker script: fetch the target URL and add 'Access-Control-Allow-Origin: *' to the response.
+ *   Set VITE_SPELLBOOK_PROXY in your .env.local and GitHub Actions secrets to your Worker URL.
+ *   e.g. VITE_SPELLBOOK_PROXY=https://your-worker.your-subdomain.workers.dev
+ *
+ * Without the env var the page falls back to a direct Commander Spellbook link.
+ */
+const PROXY_BASE = import.meta.env.VITE_SPELLBOOK_PROXY ?? '';
+const API_BASE   = PROXY_BASE || 'https://backend.commanderspellbook.com';
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 function cardCount(combo) { return combo.uses?.length ?? 0; }
@@ -124,29 +137,38 @@ function ComboCard({ combo }) {
   );
 }
 
+function csbSearchUrl(name) {
+  return `https://commanderspellbook.com/search/?q=card%3A%22${encodeURIComponent(name)}%22`;
+}
+
 /* ── Combos page ───────────────────────────────────────────────────────────── */
 export default function Combos() {
-  const [query, setQuery]   = useState('');
-  const [combos, setCombos] = useState(null);
+  const [query, setQuery]     = useState('');
+  const [combos, setCombos]   = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState('');
-  const [filter, setFilter] = useState('all'); // 'all' | '2' | '3'
+  const [corsBlocked, setCorsBlocked] = useState(false);
+  const [lastQuery, setLastQuery]     = useState('');
+  const [filter, setFilter]   = useState('all'); // 'all' | '2' | '3'
 
   async function search(name) {
     const n = name ?? query;
     if (!n.trim()) return;
-    setLoading(true); setError(''); setCombos(null);
+    setLoading(true); setCorsBlocked(false); setCombos(null); setLastQuery(n);
 
     try {
       const url = `${API_BASE}/variants?q=card%3A"${encodeURIComponent(n)}"&format=json`;
-      const data = await fetch(url).then(r => r.json());
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
       const all = (data.results ?? []).filter(c => {
         const count = cardCount(c);
         return count === 2 || count === 3;
       });
       setCombos(all);
     } catch {
-      setError('Could not reach Commander Spellbook. Check your connection.');
+      // When no proxy is configured the browser blocks cross-origin requests to
+      // backend.commanderspellbook.com — show a direct link as fallback.
+      setCorsBlocked(true);
     } finally { setLoading(false); }
   }
 
@@ -183,7 +205,21 @@ export default function Combos() {
           {loading ? '…' : 'Find Combos'}
         </button>
       </div>
-      {error && <p className="form-error">{error}</p>}
+      {corsBlocked && (
+        <div className="combo-cors-fallback">
+          <p className="combo-cors-msg">
+            Embedded combo search requires a proxy to be configured (browser cross-origin policy).
+          </p>
+          <a
+            href={csbSearchUrl(lastQuery)}
+            target="_blank"
+            rel="noreferrer"
+            className="btn-primary combo-csb-btn"
+          >
+            Search "{lastQuery}" on Commander Spellbook ↗
+          </a>
+        </div>
+      )}
 
       {combos !== null && (
         <>
