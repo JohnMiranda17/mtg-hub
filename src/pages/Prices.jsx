@@ -4,6 +4,7 @@ import { getCardByName, formatPrice, getCardImage } from '../utils/scryfall';
 import { recordSnapshot, getHistory, recordSynergyLink, getSynergyLinks } from '../utils/priceHistory';
 import { usePriceWatchlist } from '../hooks/usePriceWatchlist';
 import { useDecks } from '../hooks/useDecks';
+import { analyzeCard, getSynergyTags } from '../utils/cardAdvisor';
 import CardFilterSearch from '../components/CardFilterSearch';
 import PrintingPicker from '../components/PrintingPicker';
 import PriceChart from '../components/PriceChart';
@@ -327,6 +328,43 @@ function DeckCommanderSynergy({ card }) {
   );
 }
 
+/* ── Card Advisor — static analysis of why a card is good ───────────────── */
+function CardAdvisor({ card }) {
+  const reasons = analyzeCard(card);
+  const tags    = getSynergyTags(card);
+  if (reasons.length === 0 && tags.length === 0) return null;
+
+  return (
+    <div className="insights-panel">
+      <div className="insights-header">
+        <span className="insights-title">🧠 Why Play This?</span>
+      </div>
+      <p className="insights-sub">Key strengths of <strong>{card.name}</strong>.</p>
+      {reasons.length > 0 && (
+        <div className="advisor-reasons">
+          {reasons.map((r, i) => (
+            <div key={i} className="advisor-reason">
+              <span className="advisor-reason-icon">{r.icon}</span>
+              <div>
+                <div className="advisor-reason-title">{r.title}</div>
+                <div className="advisor-reason-desc">{r.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {tags.length > 0 && (
+        <div className="advisor-synergies">
+          <div className="advisor-syn-label">Synergizes with:</div>
+          <div className="advisor-syn-tags">
+            {tags.map((t, i) => <span key={i} className="advisor-syn-tag">{t}</span>)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Synergy back-reference (shown when current card is in someone else's synergy list) */
 function SynergyBackLinks({ card }) {
   const links = getSynergyLinks(card.id);
@@ -351,7 +389,7 @@ function SynergyBackLinks({ card }) {
 
 /* ── Main price card ─────────────────────────────────────────────────────── */
 function PriceCard({ card, onWatch, onUnwatch, watched }) {
-  const img = getCardImage(card, 'normal');
+  const img = getCardImage(card, 'large');
   return (
     <div className="price-card">
       {img && <img src={img} alt={card.name} className="price-card-img" />}
@@ -359,8 +397,17 @@ function PriceCard({ card, onWatch, onUnwatch, watched }) {
         <div className="price-card-name">{card.name}</div>
         <div className="price-card-set">
           {card.set_name} ({card.set?.toUpperCase()}) · #{card.collector_number}
+          {card.rarity && (
+            <span className={`price-rarity-badge rarity-${card.rarity}`}>{card.rarity}</span>
+          )}
         </div>
         <div className="price-card-type">{card.type_line}</div>
+        {card.oracle_text && (
+          <div className="price-card-oracle">{card.oracle_text}</div>
+        )}
+        {card.flavor_text && (
+          <div className="price-card-flavor">"{card.flavor_text}"</div>
+        )}
         <div className="price-grid">
           <div className="price-item">
             <span className="price-label">Normal USD</span>
@@ -571,6 +618,11 @@ export default function Prices() {
           {/* Synergy back-references (cards that led here) */}
           <div className="price-insights-section">
             <SynergyBackLinks card={selectedPrinting} />
+          </div>
+
+          {/* Card advisor — why to play this card */}
+          <div className="price-insights-section">
+            <CardAdvisor card={selectedPrinting} />
           </div>
 
           {/* Deck commander synergy rating */}

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import Mtgle from '../components/Mtgle';
+import Spotlight from '../components/Spotlight';
 
 const TOOLS = [
   {
@@ -56,6 +57,8 @@ export default function Hub() {
           </Link>
         ))}
       </div>
+
+      <Spotlight />
 
       <div className="hub-mtgle-section">
         <Mtgle />
