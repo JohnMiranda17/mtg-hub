@@ -14,7 +14,7 @@ export default function CardSearchInput({ value, onChange, onSelect, placeholder
     debounce.current = setTimeout(async () => {
       try {
         const results = await autocomplete(value);
-        setSuggestions(results.slice(0, 8));
+        setSuggestions(results.slice(0, 20));
         setOpen(results.length > 0);
       } catch { setSuggestions([]); }
       finally { setLoading(false); }

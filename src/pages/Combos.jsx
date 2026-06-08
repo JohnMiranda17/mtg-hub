@@ -23,14 +23,14 @@ import CardSearchInput from '../components/CardSearchInput';
  *   - Supports filtering by card count (2-card, 3-card, etc.)
  */
 
-const API_BASE = 'https://backend.commanderspellbook.com/api/v2';
+const API_BASE = 'https://backend.commanderspellbook.com';
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 function cardCount(combo) { return combo.uses?.length ?? 0; }
 
-function formatSteps(steps) {
-  if (!steps) return [];
-  return steps.split(/\d+\.\s+/).map(s => s.trim()).filter(Boolean);
+function formatSteps(description) {
+  if (!description) return [];
+  return description.split('\n').map(s => s.trim()).filter(Boolean);
 }
 
 function collectProduces(combo) {
@@ -44,7 +44,7 @@ function ComboCard({ combo }) {
   const [open, setOpen] = useState(false);
   const cards    = combo.uses?.map(u => u.card?.name ?? '') ?? [];
   const produces = collectProduces(combo);
-  const steps    = formatSteps(combo.steps);
+  const steps    = formatSteps(combo.description);
   const preReqs  = [combo.easyPrerequisites, combo.notablePrerequisites].filter(Boolean).join(' ');
 
   return (
@@ -138,7 +138,7 @@ export default function Combos() {
     setLoading(true); setError(''); setCombos(null);
 
     try {
-      const url = `${API_BASE}/combos/?q=card%3A"${encodeURIComponent(n)}"&format=json`;
+      const url = `${API_BASE}/variants?q=card%3A"${encodeURIComponent(n)}"&format=json`;
       const data = await fetch(url).then(r => r.json());
       const all = (data.results ?? []).filter(c => {
         const count = cardCount(c);

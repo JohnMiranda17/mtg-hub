@@ -49,7 +49,7 @@ export default function CardFilterSearch({ onSelect, showPrices = false }) {
     const t = setTimeout(async () => {
       try {
         const names = await autocomplete(q);
-        setSuggestions(names.slice(0, 8));
+        setSuggestions(names.slice(0, 20));
         setShowSugg(names.length > 0);
         setActiveSugg(-1);
       } catch { /* ignore */ }
