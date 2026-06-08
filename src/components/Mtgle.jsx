@@ -44,7 +44,31 @@ function updateStreak(won) {
 }
 
 /* ── Hint definitions ─────────────────────────────────────────────────────── */
-const MAX_GUESSES = 6;
+const MAX_GUESSES = 7;
+
+const SUPERTYPES = new Set(['legendary', 'basic', 'snow', 'world', 'tribal', 'kindred']);
+const MAIN_TYPES = new Set(['creature', 'enchantment', 'artifact', 'instant', 'sorcery', 'land', 'planeswalker', 'battle']);
+
+export function simplifyTypeLine(typeLine) {
+  // Take front face only for double-faced cards, then drop subtypes after "—"
+  const frontFace = (typeLine ?? '').split('//')[0];
+  const beforeDash = frontFace.split('—')[0].trim();
+  const mainTypes = beforeDash.split(/\s+/)
+    .filter(w => MAIN_TYPES.has(w.toLowerCase()))
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  return mainTypes.length ? mainTypes.join(' ') : beforeDash;
+}
+
+// Returns supertypes (Legendary, Snow…) + subtypes (Elf, Eldrazi, Aura…) stripped from simplifyTypeLine
+export function extractSubtypes(typeLine) {
+  const frontFace = (typeLine ?? '').split('//')[0];
+  const parts = frontFace.split('—');
+  const supertypes = (parts[0] ?? '').trim().split(/\s+/)
+    .filter(w => SUPERTYPES.has(w.toLowerCase()));
+  const subtypes = (parts[1] ?? '').trim().split(/\s+/).filter(Boolean);
+  const all = [...supertypes, ...subtypes];
+  return all.length ? all.join(', ') : null;
+}
 
 function extractKeywords(card) {
   const oracle = card.oracle_text ?? '';
@@ -60,9 +84,10 @@ function extractKeywords(card) {
 
 function getHints(card) {
   return [
-    { label: 'Card Type',  value: card.type_line },
+    { label: 'Card Type',  value: simplifyTypeLine(card.type_line) },
     { label: 'Mana Cost',  value: card.mana_cost || '{0}' },
     { label: 'First Letter', value: `The card name starts with "${card.name[0].toUpperCase()}"` },
+    { label: 'Subtypes',   value: extractSubtypes(card.type_line) ?? '(none)' },
     { label: 'Keywords',   value: extractKeywords(card) },
     { label: 'Set',        value: card.set_name },
     { label: 'Art Crop',   value: card.image_uris?.art_crop ?? card.card_faces?.[0]?.image_uris?.art_crop ?? null, isArt: true },
@@ -196,7 +221,7 @@ export default function Mtgle() {
       {/* Instructions */}
       {game.guesses.length === 0 && !gameOver && (
         <p className="mtgle-instructions">
-          Guess the MTG card! Card type is free — each wrong answer reveals another hint. 6 guesses total.
+          Guess the MTG card! Card type is free — each wrong answer reveals another hint. 7 guesses total.
         </p>
       )}
 
