@@ -8,6 +8,7 @@ const MAIN_LINKS = [
   { to: '/collection',  label: '📦 Collection'            },
   { to: '/prices',      label: '💰 Prices'                },
   { to: '/board-state', label: '⚔️ Board State'           },
+  { to: '/combos',      label: '💥 Combos'                },
 ];
 
 const SOCIAL_LINKS = [

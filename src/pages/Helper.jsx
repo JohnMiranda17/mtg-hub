@@ -5,6 +5,7 @@ import TurnGuide from '../components/helper/TurnGuide';
 import CardTypesGuide from '../components/helper/CardTypesGuide';
 import ConceptsGuide from '../components/helper/ConceptsGuide';
 import RulesChat from './RulesChat';
+import ArchetypesGuide from '../components/helper/ArchetypesGuide';
 import { keywords } from '../data/keywords';
 
 const TABS = [
@@ -16,6 +17,7 @@ const TABS = [
   { id: 'stack',        label: '📦 The Stack'      },
   { id: 'combat',       label: '⚔️ Combat'         },
   { id: 'deckbuilding', label: '🏗 Deck Building'  },
+  { id: 'archetypes',   label: '🏛 Archetypes'     },
   { id: 'ai-rules',     label: '🤖 Rules AI'       },
 ];
 
@@ -83,6 +85,7 @@ export default function Helper() {
       {(tab === 'mana' || tab === 'zones' || tab === 'stack' || tab === 'combat' || tab === 'deckbuilding') &&
         <ConceptsGuide activeTab={tab} />}
 
+      {tab === 'archetypes' && <ArchetypesGuide />}
       {tab === 'ai-rules' && <RulesChat />}
     </div>
   );

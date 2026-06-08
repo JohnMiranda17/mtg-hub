@@ -741,3 +741,130 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .game-name-label { color: var(--text-dim); font-size: .78rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
 .game-name-input { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); flex: 1; font-size: .85rem; max-width: 260px; padding: .3rem .65rem; }
 .game-name-input:focus { border-color: var(--gold); outline: none; }
+
+/* ── Hub MTGLE section ────────────────────────────────────────────────────── */
+.hub-mtgle-section { border-top: 1px solid var(--border); margin-top: 2.5rem; padding-top: 2rem; }
+
+/* ── MTGLE game ───────────────────────────────────────────────────────────── */
+.mtgle-wrap { max-width: 520px; margin: 0 auto; }
+.mtgle-header { align-items: center; display: flex; justify-content: space-between; margin-bottom: .75rem; }
+.mtgle-title-row { align-items: baseline; display: flex; gap: .5rem; }
+.mtgle-title { color: var(--gold); font-size: 1.3rem; font-weight: 800; }
+.mtgle-puzzle-num { color: var(--text-dim); font-size: .85rem; }
+.mtgle-streak-row { display: flex; gap: .85rem; }
+.mtgle-streak,.mtgle-best { color: var(--text-dim); font-size: .85rem; }
+.mtgle-instructions { color: var(--text-dim); font-size: .82rem; margin-bottom: .85rem; line-height: 1.5; }
+.mtgle-loading,.mtgle-error { color: var(--text-dim); padding: 1rem 0; }
+.mtgle-error-sub { font-size: .78rem; margin-top: .25rem; }
+.mtgle-guesses { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1rem; }
+.mtgle-guess-slot { align-items: center; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); display: flex; gap: .5rem; min-height: 40px; padding: .4rem .75rem; font-size: .875rem; }
+.mtgle-slot-current { border-color: var(--gold); }
+.mtgle-slot-win   { background: rgba(74,201,122,.12); border-color: #4ac97a; }
+.mtgle-slot-wrong { background: rgba(224,96,96,.08); border-color: rgba(224,96,96,.4); }
+.mtgle-slot-icon { font-size: 1rem; }
+.mtgle-slot-text { color: var(--text); flex: 1; }
+.mtgle-slot-placeholder { color: rgba(255,255,255,.2); font-size: .78rem; }
+.mtgle-hints { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; gap: .55rem; margin-bottom: 1rem; padding: .85rem 1rem; }
+.mtgle-hint { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; font-size: .875rem; }
+.mtgle-hint-label { color: var(--gold-dim); font-size: .75rem; font-weight: 700; letter-spacing: .04em; min-width: 90px; text-transform: uppercase; }
+.mtgle-hint-value { color: var(--text); }
+.mtgle-hint-art { border-radius: 6px; max-width: 100%; width: 220px; }
+.mtgle-input-row { display: flex; gap: .5rem; }
+.mtgle-input-row.shake { animation: shake .4s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
+.mtgle-result { align-items: center; display: flex; flex-direction: column; gap: .6rem; padding: .5rem 0; text-align: center; }
+.mtgle-result-icon { font-size: 2.5rem; }
+.mtgle-result-title { color: var(--gold); font-size: 1.1rem; font-weight: 700; }
+.mtgle-result-sub { color: var(--text-dim); font-size: .85rem; }
+.mtgle-reveal { align-items: center; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); display: flex; gap: 1rem; margin: .25rem 0; padding: .85rem 1rem; text-align: left; }
+.mtgle-reveal-img { border-radius: 6px; flex-shrink: 0; width: 80px; }
+.mtgle-reveal-name { color: var(--gold); font-size: 1rem; font-weight: 700; }
+.mtgle-reveal-type { color: var(--text-dim); font-size: .8rem; margin-top: .15rem; }
+.mtgle-reveal-set { color: var(--text-dim); font-size: .75rem; }
+.mtgle-share-btn { min-width: 160px; }
+.mtgle-comeback { color: var(--text-dim); font-size: .78rem; }
+.hint-mana { display: inline-flex; flex-wrap: wrap; gap: 2px; }
+.mana-pip { align-items: center; border-radius: 50%; display: inline-flex; font-size: .7rem; font-weight: 700; height: 18px; justify-content: center; width: 18px; }
+.mana-w { background: #f9f1d3; color: #333; }
+.mana-u { background: #3a6dc9; color: #fff; }
+.mana-b { background: #2a1b30; border: 1px solid #555; color: #ccc; }
+.mana-r { background: #d94040; color: #fff; }
+.mana-g { background: #2a7a3b; color: #fff; }
+.mana-c { background: #9a9a9a; color: #fff; }
+.mana-x,.mana-generic { background: #555; color: #fff; }
+
+/* ── Reddit sub-tabs ──────────────────────────────────────────────────────── */
+.reddit-sub-tabs { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .6rem; }
+.reddit-sub-tab { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; color: var(--text-dim); cursor: pointer; font-size: .72rem; padding: .2rem .55rem; }
+.reddit-sub-tab.active { background: rgba(201,168,76,.12); border-color: var(--gold-dim); color: var(--gold); }
+
+/* ── Commander synergy panel ──────────────────────────────────────────────── */
+.cmdr-syn-list { display: flex; flex-direction: column; gap: .5rem; }
+.cmdr-syn-item { background: var(--bg3); border-radius: 4px; padding: .55rem .75rem; }
+.cmdr-syn-row { align-items: center; display: flex; gap: .5rem; flex-wrap: wrap; }
+.cmdr-syn-name { color: var(--gold); flex: 1; font-size: .875rem; font-weight: 600; min-width: 120px; }
+.cmdr-syn-badge { border-radius: 4px; font-size: .7rem; font-weight: 700; padding: .15rem .45rem; }
+.cmdr-syn-pct { color: var(--text); font-size: .82rem; font-weight: 700; }
+.cmdr-rating-staple { background: rgba(74,201,122,.15); color: #4ac97a; }
+.cmdr-rating-good   { background: rgba(201,168,76,.15);  color: var(--gold); }
+.cmdr-rating-situ   { background: rgba(255,255,255,.07); color: var(--text-dim); }
+.cmdr-syn-sub { color: var(--text-dim); font-size: .72rem; margin-top: .15rem; }
+
+/* ── Deck archetypes guide ────────────────────────────────────────────────── */
+.archetypes-wrap { padding-top: .5rem; }
+.archetype-selector { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.archetype-btn { align-items: center; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-dim); cursor: pointer; display: flex; flex-direction: column; font-size: .8rem; gap: .2rem; min-width: 90px; padding: .65rem 1.1rem; transition: all .15s; }
+.archetype-btn-icon { font-size: 1.5rem; }
+.archetype-btn:hover,.archetype-btn-active { border-color: var(--arch-color, var(--gold)); color: var(--text); }
+.archetype-detail { background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--arch-color, var(--gold)); border-radius: var(--radius); padding: 1.25rem 1.5rem; }
+.archetype-detail-header { align-items: flex-start; display: flex; gap: .85rem; margin-bottom: .85rem; }
+.archetype-detail-icon { flex-shrink: 0; font-size: 2.5rem; line-height: 1; }
+.archetype-detail-name { color: var(--arch-color, var(--gold)); font-size: 1.4rem; font-weight: 800; }
+.archetype-detail-tagline { color: var(--text-dim); font-size: .85rem; font-style: italic; margin-top: .1rem; }
+.archetype-description { color: var(--text); font-size: .9rem; line-height: 1.65; margin-bottom: 1rem; }
+.archetype-columns { display: grid; gap: 1.25rem; grid-template-columns: 1fr 1fr; margin-bottom: 1rem; }
+@media (max-width: 640px) { .archetype-columns { grid-template-columns: 1fr; } }
+.archetype-section-title { color: var(--text-dim); font-size: .72rem; font-weight: 700; letter-spacing: .06em; margin-bottom: .35rem; text-transform: uppercase; }
+.archetype-playstyle,.archetype-formats { color: var(--text-dim); font-size: .85rem; line-height: 1.6; }
+.archetype-list { color: var(--text-dim); font-size: .85rem; line-height: 1.8; padding-left: 1.25rem; }
+.archetype-strengths li::marker { color: #4ac97a; }
+.archetype-weaknesses li::marker { color: #e06060; }
+.archetype-cards-section { border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 1rem; padding-top: 1rem; }
+.archetype-card-group { flex: 1; min-width: 200px; }
+.archetype-card-pills { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .35rem; }
+.archetype-card-pill { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; color: var(--text-dim); font-size: .75rem; padding: .2rem .55rem; text-decoration: none; transition: all .15s; }
+.archetype-card-pill:hover { border-color: var(--gold); color: var(--gold); }
+.archetype-commander-pill { border-color: rgba(201,168,76,.3); color: var(--gold-dim); }
+
+/* ── Combos page ──────────────────────────────────────────────────────────── */
+.combo-search-row { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.combo-filter-bar { align-items: center; display: flex; flex-wrap: wrap; gap: .75rem; justify-content: space-between; margin-bottom: .75rem; }
+.combo-result-count { color: var(--text-dim); font-size: .82rem; }
+.combo-filter-tabs { display: flex; gap: .35rem; }
+.combo-filter-tab { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-dim); cursor: pointer; font-size: .78rem; padding: .25rem .65rem; }
+.combo-filter-tab.active { background: rgba(160,108,213,.15); border-color: #a06cd5; color: #a06cd5; }
+.combo-list { display: flex; flex-direction: column; gap: .6rem; }
+.combo-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.combo-card.combo-card-open { border-color: #a06cd5; }
+.combo-card-header { align-items: center; background: none; border: none; cursor: pointer; display: flex; flex-wrap: wrap; gap: .6rem; padding: .75rem 1rem; text-align: left; width: 100%; }
+.combo-card-header:hover { background: rgba(255,255,255,.025); }
+.combo-card-title-wrap { align-items: center; display: flex; flex: 1; flex-wrap: wrap; gap: .45rem; min-width: 0; }
+.combo-size-badge { background: rgba(160,108,213,.15); border-radius: 4px; color: #a06cd5; flex-shrink: 0; font-size: .7rem; font-weight: 700; padding: .15rem .45rem; }
+.combo-card-names { color: var(--text); font-size: .875rem; font-weight: 600; }
+.combo-produces { align-items: center; display: flex; flex-wrap: wrap; gap: .3rem; }
+.combo-produce-tag { background: rgba(74,201,122,.1); border-radius: 4px; color: #4ac97a; font-size: .68rem; padding: .1rem .35rem; }
+.combo-produce-more { color: var(--text-dim); font-size: .7rem; }
+.combo-expand-icon { color: var(--text-dim); flex-shrink: 0; font-size: .75rem; }
+.combo-card-body { border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: .7rem; padding: .85rem 1rem; }
+.combo-cards-row { display: flex; flex-wrap: wrap; gap: .4rem; }
+.combo-card-link { color: var(--gold); font-size: .82rem; text-decoration: none; }
+.combo-card-link:hover { text-decoration: underline; }
+.combo-section { display: flex; flex-direction: column; gap: .25rem; }
+.combo-section-label { color: var(--text-dim); font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.combo-prereq-text { color: var(--text-dim); font-size: .82rem; line-height: 1.5; }
+.combo-steps { color: var(--text-dim); font-size: .82rem; line-height: 1.7; margin: 0; padding-left: 1.15rem; }
+.combo-steps li { margin-bottom: .15rem; }
+.combo-produces-full { display: flex; flex-wrap: wrap; gap: .3rem; }
+.combo-mana { color: var(--text-dim); font-family: monospace; font-size: .82rem; }
+.combo-external-link { align-self: flex-start; color: var(--text-dim); font-size: .75rem; text-decoration: none; }
+.combo-external-link:hover { color: var(--gold); }

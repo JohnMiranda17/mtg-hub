@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
+import Mtgle from '../components/Mtgle';
 
 const TOOLS = [
   {
     to: '/helper',
     icon: '🃏',
     name: 'MTG Helper',
-    description: 'Rules reference and AI rules Q&A — keywords, turn structure, combat, zones, and more.',
+    description: 'Rules reference — keywords, turn structure, card types, concepts, archetypes, and AI rules Q&A.',
     color: '#c9a84c',
   },
   {
@@ -19,8 +20,15 @@ const TOOLS = [
     to: '/prices',
     icon: '💰',
     name: 'Price Tracker',
-    description: 'Search any card and see live market prices from Scryfall. Build a watchlist of cards you\'re buying or selling.',
+    description: 'Search any card for live prices, EDHREC synergies, Reddit buzz, and how it fits your commander decks.',
     color: '#4ac97a',
+  },
+  {
+    to: '/combos',
+    icon: '💥',
+    name: 'Combo Searcher',
+    description: 'Find 2 and 3-card combos for any card. Powered by Commander Spellbook.',
+    color: '#a06cd5',
   },
   {
     to: '/board-state',
@@ -47,6 +55,10 @@ export default function Hub() {
             <span className="hub-card-cta">Open →</span>
           </Link>
         ))}
+      </div>
+
+      <div className="hub-mtgle-section">
+        <Mtgle />
       </div>
     </div>
   );
