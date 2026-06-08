@@ -45,6 +45,141 @@ const SPEED_RULES = [
   },
 ];
 
+const ABILITY_TYPES = [
+  {
+    name: 'Activated Abilities',
+    icon: '🔘',
+    color: '#7b68c9',
+    summary: 'Cost: Effect — instant speed by default',
+    rules: [
+      'Written as "Cost: Effect" (e.g., "{2}: Draw a card" or "Tap: Add {G}")',
+      'Can be activated any time you have priority — instant speed by default',
+      'If they say "Activate only as a sorcery," they follow sorcery-speed rules',
+      'Loyalty abilities on planeswalkers are activated, but are sorcery speed and once per turn per planeswalker',
+      'Mana abilities (tap for mana) resolve immediately without going on the stack',
+    ],
+    tip: 'You can activate an ability any number of times per turn as long as you can pay the cost. There is no "once per turn" limit unless the card says so.',
+  },
+  {
+    name: 'Triggered Abilities',
+    icon: '🔔',
+    color: '#c9684a',
+    summary: '"When / Whenever / At" — go on the stack',
+    rules: [
+      'Start with "When...", "Whenever...", or "At the beginning of..."',
+      'When the condition is met, the ability waits for the current action to finish, then goes on the stack',
+      'Once on the stack, all players can respond to it with instants and abilities',
+      '"Dies" triggers are triggered abilities — they trigger after the creature is in the graveyard',
+      '"When this enters the battlefield" (ETB) triggers go on the stack after the permanent resolves',
+    ],
+    tip: '"Whenever you cast a spell" triggers when the spell is put on the stack — before it resolves. You get the trigger even if the spell is later countered.',
+  },
+  {
+    name: 'Static Abilities',
+    icon: '🔷',
+    color: '#4ac9a0',
+    summary: 'Always active — never go on the stack',
+    rules: [
+      'Continuously apply their effect while the permanent is on the battlefield',
+      'Examples: Flying, Hexproof, "Creatures you control get +1/+1"',
+      'You cannot respond to a static ability — it is not an event',
+      'If the permanent leaves the battlefield, the static effect immediately stops',
+      'Conflicting static effects are resolved using the "layers" system (applied in a fixed order)',
+    ],
+    tip: "Static abilities are always on. You can't \"save\" or \"use\" them — they just work automatically as long as the card is in play.",
+  },
+  {
+    name: 'Mana Abilities',
+    icon: '💎',
+    color: '#c9b84a',
+    summary: 'Special: resolve immediately, bypass the stack',
+    rules: [
+      'An activated or triggered ability that could produce mana and does not target',
+      'Resolves IMMEDIATELY — does not go on the stack and cannot be responded to',
+      'Examples: tapping a Forest, Sol Ring, Llanowar Elves',
+      'This is why you can tap a land to pay for a spell in the middle of casting it',
+      '"Add {G} when a creature enters" is also a mana ability — still resolves immediately',
+    ],
+    tip: "Mana abilities are the only abilities that bypass the stack entirely. This is intentional — Magic would be unplayable if opponents could respond to you tapping a land.",
+  },
+];
+
+const DEATH_EFFECTS = [
+  {
+    title: 'When a Creature Dies',
+    icon: '💀',
+    highlight: true,
+    summary: 'Goes to graveyard — triggers "dies" abilities',
+    body: [
+      'A creature "dies" when it moves from the battlefield to the graveyard via lethal damage, a destroy effect, or sacrifice.',
+      '"When [this] dies" triggered abilities go on the stack after the creature is already in the graveyard.',
+      'Once the trigger is on the stack, players can respond to it with instants and abilities.',
+      'You cannot respond to the death itself — only to what caused it (the removal spell) before it resolves, or to the trigger after.',
+    ],
+    tip: 'To stop a "dies" trigger, you must exile the creature before it goes to the graveyard. Replacing destroy with exile (e.g., Path to Exile) skips the graveyard entirely — no dies trigger.',
+    example: "Your creature is hit by Lightning Bolt and dies. \"When this dies, draw a card\" goes on the stack — your opponent can counter that trigger, but can't undo the death.",
+  },
+  {
+    title: 'Destroy vs. Exile',
+    icon: '✨',
+    highlight: true,
+    summary: 'Exile skips the graveyard — no "dies" trigger',
+    body: [
+      '"Destroy" sends a creature to the graveyard → fires "when this dies" and graveyard-matters effects.',
+      '"Exile" removes the permanent from the game entirely — it never visits the graveyard.',
+      'Exiled creatures do NOT trigger "when this dies" abilities.',
+      'Exiled creatures cannot be retrieved by graveyard recursion (Reanimate, Unearth, etc.).',
+      'Indestructible creatures cannot be destroyed but CAN be exiled, sacrificed, or killed by -X/-X.',
+    ],
+    tip: 'If your opponent has a creature with a powerful "dies" trigger, reach for exile. "Swords to Plowshares," "Path to Exile," and "Generous Gift" all bypass dies triggers.',
+    example: '"My creature has \'when this dies, return it to hand.\' You destroy it." → triggers, returns to hand. "You exile it instead." → no trigger, it\'s just gone.',
+  },
+  {
+    title: 'Sacrifice Effects',
+    icon: '🔱',
+    highlight: false,
+    summary: 'Ignores indestructible — still triggers "dies"',
+    body: [
+      'Sacrifice moves a permanent from battlefield to graveyard regardless of indestructible or protection.',
+      'Indestructible does NOT prevent sacrifice — the creature still goes to the graveyard.',
+      'Sacrifice DOES trigger "when this dies" abilities just like destroy does.',
+      '"Sacrifice a creature" effects (like Merciless Executioner) cannot be countered by making the creature indestructible.',
+      'Forced sacrifice bypasses hexproof and protection — those only stop targeting.',
+    ],
+    tip: "Indestructible only prevents being destroyed by damage and destroy effects. Sacrifice, exile, and -X/-X that drops toughness to 0 all still kill an indestructible creature.",
+    example: '"Your opponent\'s commander is indestructible. You cast \'each opponent sacrifices a creature.\' They must sacrifice it — indestructible doesn\'t apply to sacrifice."',
+  },
+  {
+    title: 'Leave-the-Battlefield Triggers',
+    icon: '🚪',
+    highlight: false,
+    summary: '"When leaves" fires for any zone change',
+    body: [
+      '"When [this] leaves the battlefield" triggers for any zone change: graveyard, exile, hand, or back to library.',
+      '"When [this] dies" only triggers when the destination is specifically the graveyard.',
+      'Bounce (return to hand) fires "leaves the battlefield" but NOT "dies."',
+      'Flickering (exile then immediately return) fires "leaves the battlefield" and "enters the battlefield," but NOT "dies."',
+      'Auras attached to a permanent go to the graveyard when it leaves. Equipment stays on the battlefield unattached.',
+    ],
+    tip: '"Flicker" effects exile a permanent and return it — this re-triggers ETB abilities and can remove negative auras or counters. But it does NOT trigger dies effects.',
+    example: '"Your creature is flickered. Any \'when this dies\' triggers? No — it went to exile briefly, not the graveyard. But its \'enters the battlefield\' trigger fires when it comes back."',
+  },
+  {
+    title: 'Last Known Information',
+    icon: '📋',
+    highlight: false,
+    summary: 'Abilities check the card as it was when it left',
+    body: [
+      'When a triggered ability references a permanent that has already left the battlefield, it uses that permanent\'s last known characteristics.',
+      'Example: "When this creature dies, if its power was 4 or greater, draw a card." The power is checked as it was on the battlefield.',
+      'Counters and auras on the creature at the time of death count toward last known information.',
+      'For permanents still on the battlefield, always use current information — last known info only applies to things that have already left.',
+    ],
+    tip: 'You can pump a creature right before it dies and the boosted stats count for any "last known information" checks on its death trigger.',
+    example: '"3/3 creature with \'when this dies, if power ≥ 4, draw a card.\' Opponent pumps it to 5/5 in response to your removal. It dies as a 5/5 — last known power is 5, so they draw."',
+  },
+];
+
 const PRIORITY_STEPS = [
   {
     num: '1',
@@ -120,16 +255,18 @@ const WINDOWS = [
 ];
 
 export default function TimingGuide() {
-  const [openSpeed, setOpenSpeed]   = useState(null);
-  const [openWindow, setOpenWindow] = useState(null);
+  const [openSpeed,   setOpenSpeed]   = useState(null);
+  const [openAbility, setOpenAbility] = useState(null);
+  const [openDeath,   setOpenDeath]   = useState(null);
+  const [openWindow,  setOpenWindow]  = useState(null);
 
   return (
     <div className="section-content">
       <p className="section-intro">
-        Knowing <em>when</em> you can play your cards is one of the most important skills in Magic. This guide explains timing windows, who holds priority, and the best moments to interact.
+        Knowing <em>when</em> you can play your cards is one of the most important skills in Magic. This guide explains timing windows, ability types, death effects, and who holds priority.
       </p>
 
-      {/* Quick reference */}
+      {/* Speed Quick Reference */}
       <h3 className="subsection-title">Timing Quick Reference</h3>
       <div className="timing-speed-list">
         {SPEED_RULES.map(r => {
@@ -157,6 +294,78 @@ export default function TimingGuide() {
                   </ul>
                   <p className="timing-speed-includes"><strong>Includes:</strong> {r.includes}</p>
                   <div className="timing-speed-tip">{r.tip}</div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Ability Types */}
+      <h3 className="subsection-title" style={{ marginTop: '1.5rem' }}>Ability Types &amp; Timing</h3>
+      <p className="section-intro">Not all abilities work the same way. Click any type to see when and how it can be used.</p>
+      <div className="timing-speed-list">
+        {ABILITY_TYPES.map(a => {
+          const isOpen = openAbility === a.name;
+          return (
+            <div
+              key={a.name}
+              className={`timing-speed-card${isOpen ? ' timing-speed-open' : ''}`}
+              style={{ '--speed-color': a.color }}
+              onClick={() => setOpenAbility(isOpen ? null : a.name)}
+            >
+              <div className="timing-speed-header">
+                <span className="timing-speed-icon">{a.icon}</span>
+                <div className="timing-speed-title-group">
+                  <span className="timing-speed-name">{a.name}</span>
+                  <span className="timing-speed-summary">{a.summary}</span>
+                </div>
+                <span className="timing-speed-toggle">{isOpen ? '▲' : '▼'}</span>
+              </div>
+              {isOpen && (
+                <div className="timing-speed-body">
+                  <p className="timing-speed-when-label">How they work:</p>
+                  <ul className="timing-when-list">
+                    {a.rules.map((rule, i) => <li key={i}>{rule}</li>)}
+                  </ul>
+                  <div className="timing-speed-tip">{a.tip}</div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Death & Leave-the-Battlefield */}
+      <h3 className="subsection-title" style={{ marginTop: '1.5rem' }}>Death &amp; Leave-the-Battlefield Effects</h3>
+      <p className="section-intro">Understanding what happens when permanents leave the battlefield is key to playing removal and protection correctly.</p>
+      <div className="timing-windows-list">
+        {DEATH_EFFECTS.map(d => {
+          const isOpen = openDeath === d.title;
+          return (
+            <div
+              key={d.title}
+              className={`timing-window-card${d.highlight ? ' timing-window-highlight' : ''}${isOpen ? ' timing-window-open' : ''}`}
+              onClick={() => setOpenDeath(isOpen ? null : d.title)}
+            >
+              <div className="timing-window-header">
+                <span className="timing-window-icon">{d.icon}</span>
+                <div className="timing-window-title-group">
+                  <span className="timing-window-phase">{d.title}</span>
+                  {d.highlight && <span className="timing-key-badge">Key Rule</span>}
+                </div>
+                <span className="timing-window-who">{d.summary}</span>
+                <span className="timing-window-toggle">{isOpen ? '▲' : '▼'}</span>
+              </div>
+              {isOpen && (
+                <div className="timing-window-body">
+                  <ul className="timing-when-list" style={{ marginBottom: '0.6rem' }}>
+                    {d.body.map((point, i) => <li key={i}>{point}</li>)}
+                  </ul>
+                  <div className="timing-speed-tip" style={{ marginBottom: '0.5rem' }}>{d.tip}</div>
+                  <div className="timing-window-example">
+                    <span className="timing-example-label">Example:</span> {d.example}
+                  </div>
                 </div>
               )}
             </div>

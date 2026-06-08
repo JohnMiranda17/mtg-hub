@@ -871,6 +871,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .combo-cors-fallback { align-items: flex-start; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; gap: .75rem; margin: .5rem 0 1rem; padding: 1rem 1.25rem; }
 .combo-cors-msg { color: var(--text-dim); font-size: .85rem; margin: 0; }
 .combo-csb-btn { align-self: flex-start; text-decoration: none; }
+.combo-info-section { margin-top: 2rem; }
+.combo-featured-header { align-items: center; cursor: pointer; display: flex; justify-content: space-between; }
+.combo-featured-header:hover .subsection-title { color: #a06cd5; }
+.combo-show-featured-btn { background: none; border: 1px dashed var(--border); border-radius: var(--radius); color: var(--text-dim); cursor: pointer; font-size: .82rem; margin-top: .5rem; padding: .45rem 1rem; width: 100%; }
+.combo-show-featured-btn:hover { border-color: #a06cd5; color: #a06cd5; }
 
 /* ── Price card — oracle text, rarity badge ───────────────────────────────── */
 .price-rarity-badge { border-radius: 4px; font-size: .65rem; font-weight: 700; letter-spacing: .04em; margin-left: .5rem; padding: .1rem .4rem; text-transform: capitalize; vertical-align: middle; }
