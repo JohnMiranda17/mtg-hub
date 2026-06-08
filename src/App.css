@@ -837,45 +837,47 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .archetype-commander-pill { border-color: rgba(201,168,76,.3); color: var(--gold-dim); }
 
 /* ── Combos page ──────────────────────────────────────────────────────────── */
+/* Accent: #d4622a burnt orange — energetic, appropriate for "explosive" combos */
 .combo-search-row { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
 .combo-filter-bar { align-items: center; display: flex; flex-wrap: wrap; gap: .75rem; justify-content: space-between; margin-bottom: .75rem; }
-.combo-result-count { color: var(--text-dim); font-size: .82rem; }
+.combo-result-count { color: #a09888; font-size: .82rem; }
 .combo-filter-tabs { display: flex; gap: .35rem; }
-.combo-filter-tab { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-dim); cursor: pointer; font-size: .78rem; padding: .25rem .65rem; }
-.combo-filter-tab.active { background: rgba(160,108,213,.15); border-color: #a06cd5; color: #a06cd5; }
+.combo-filter-tab { background: #1e1e28; border: 1px solid #38384e; border-radius: 4px; color: #9090a0; cursor: pointer; font-size: .78rem; padding: .25rem .65rem; transition: color .15s, border-color .15s; }
+.combo-filter-tab:hover { border-color: #d4622a; color: #e8e0d0; }
+.combo-filter-tab.active { background: rgba(212,98,42,.15); border-color: #d4622a; color: #e8864e; }
 .combo-list { display: flex; flex-direction: column; gap: .6rem; }
-.combo-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.combo-card.combo-card-open { border-color: #a06cd5; }
+.combo-card { background: #1a1a24; border: 1px solid #32323f; border-radius: var(--radius); overflow: hidden; transition: border-color .15s; }
+.combo-card.combo-card-open { border-color: #d4622a; box-shadow: 0 0 0 1px rgba(212,98,42,.2); }
 .combo-card-header { align-items: center; background: none; border: none; cursor: pointer; display: flex; flex-wrap: wrap; gap: .6rem; padding: .75rem 1rem; text-align: left; width: 100%; }
-.combo-card-header:hover { background: rgba(255,255,255,.025); }
+.combo-card-header:hover { background: rgba(212,98,42,.04); }
 .combo-card-title-wrap { align-items: center; display: flex; flex: 1; flex-wrap: wrap; gap: .45rem; min-width: 0; }
-.combo-size-badge { background: rgba(160,108,213,.15); border-radius: 4px; color: #a06cd5; flex-shrink: 0; font-size: .7rem; font-weight: 700; padding: .15rem .45rem; }
-.combo-card-names { color: var(--text); font-size: .875rem; font-weight: 600; }
+.combo-size-badge { background: rgba(212,98,42,.18); border-radius: 4px; color: #e8864e; flex-shrink: 0; font-size: .7rem; font-weight: 700; padding: .15rem .5rem; }
+.combo-card-names { color: #ede8e0; font-size: .9rem; font-weight: 600; }
 .combo-produces { align-items: center; display: flex; flex-wrap: wrap; gap: .3rem; }
-.combo-produce-tag { background: rgba(74,201,122,.1); border-radius: 4px; color: #4ac97a; font-size: .68rem; padding: .1rem .35rem; }
-.combo-produce-more { color: var(--text-dim); font-size: .7rem; }
-.combo-expand-icon { color: var(--text-dim); flex-shrink: 0; font-size: .75rem; }
-.combo-card-body { border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: .7rem; padding: .85rem 1rem; }
+.combo-produce-tag { background: rgba(201,168,76,.12); border-radius: 4px; color: #c9a84c; font-size: .68rem; font-weight: 600; padding: .1rem .4rem; }
+.combo-produce-more { color: #7a7068; font-size: .7rem; }
+.combo-expand-icon { color: #6a6478; flex-shrink: 0; font-size: .75rem; }
+.combo-card-body { border-top: 1px solid #2a2a38; display: flex; flex-direction: column; gap: .75rem; padding: .9rem 1rem; }
 .combo-cards-row { display: flex; flex-wrap: wrap; gap: .4rem; }
-.combo-card-link { color: var(--gold); font-size: .82rem; text-decoration: none; }
-.combo-card-link:hover { text-decoration: underline; }
-.combo-section { display: flex; flex-direction: column; gap: .25rem; }
-.combo-section-label { color: var(--text-dim); font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
-.combo-prereq-text { color: var(--text-dim); font-size: .82rem; line-height: 1.5; }
-.combo-steps { color: var(--text-dim); font-size: .82rem; line-height: 1.7; margin: 0; padding-left: 1.15rem; }
-.combo-steps li { margin-bottom: .15rem; }
+.combo-card-link { color: #d4a24a; font-size: .82rem; font-weight: 500; text-decoration: none; }
+.combo-card-link:hover { color: #e8c060; text-decoration: underline; }
+.combo-section { display: flex; flex-direction: column; gap: .3rem; }
+.combo-section-label { color: #d4622a; font-size: .7rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.combo-prereq-text { color: #b0a898; font-size: .83rem; line-height: 1.55; }
+.combo-steps { color: #b8b0a4; font-size: .83rem; line-height: 1.75; margin: 0; padding-left: 1.2rem; }
+.combo-steps li { margin-bottom: .2rem; }
 .combo-produces-full { display: flex; flex-wrap: wrap; gap: .3rem; }
-.combo-mana { color: var(--text-dim); font-family: monospace; font-size: .82rem; }
-.combo-external-link { align-self: flex-start; color: var(--text-dim); font-size: .75rem; text-decoration: none; }
-.combo-external-link:hover { color: var(--gold); }
-.combo-cors-fallback { align-items: flex-start; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; gap: .75rem; margin: .5rem 0 1rem; padding: 1rem 1.25rem; }
-.combo-cors-msg { color: var(--text-dim); font-size: .85rem; margin: 0; }
+.combo-mana { color: #b0a898; font-family: monospace; font-size: .82rem; }
+.combo-external-link { align-self: flex-start; color: #7a7068; font-size: .75rem; text-decoration: none; }
+.combo-external-link:hover { color: #d4a24a; }
+.combo-cors-fallback { background: rgba(212,98,42,.07); border: 1px solid rgba(212,98,42,.25); border-radius: var(--radius); margin: .5rem 0 1rem; padding: .85rem 1.1rem; }
+.combo-cors-msg { color: #c8a888; font-size: .85rem; margin: 0; }
 .combo-csb-btn { align-self: flex-start; text-decoration: none; }
 .combo-info-section { margin-top: 2rem; }
 .combo-featured-header { align-items: center; cursor: pointer; display: flex; justify-content: space-between; }
-.combo-featured-header:hover .subsection-title { color: #a06cd5; }
-.combo-show-featured-btn { background: none; border: 1px dashed var(--border); border-radius: var(--radius); color: var(--text-dim); cursor: pointer; font-size: .82rem; margin-top: .5rem; padding: .45rem 1rem; width: 100%; }
-.combo-show-featured-btn:hover { border-color: #a06cd5; color: #a06cd5; }
+.combo-featured-header:hover .subsection-title { color: #d4622a; }
+.combo-show-featured-btn { background: none; border: 1px dashed rgba(212,98,42,.35); border-radius: var(--radius); color: #9090a0; cursor: pointer; font-size: .83rem; margin-top: .5rem; padding: .5rem 1rem; transition: border-color .15s, color .15s; width: 100%; }
+.combo-show-featured-btn:hover { border-color: #d4622a; color: #e8864e; }
 
 /* ── Price card — oracle text, rarity badge ───────────────────────────────── */
 .price-rarity-badge { border-radius: 4px; font-size: .65rem; font-weight: 700; letter-spacing: .04em; margin-left: .5rem; padding: .1rem .4rem; text-transform: capitalize; vertical-align: middle; }

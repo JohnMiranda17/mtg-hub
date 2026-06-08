@@ -28,7 +28,7 @@ const TOOLS = [
     icon: '💥',
     name: 'Combo Searcher',
     description: 'Find 2 and 3-card combos for any card. Powered by Commander Spellbook.',
-    color: '#a06cd5',
+    color: '#d4622a',
   },
   {
     to: '/board-state',

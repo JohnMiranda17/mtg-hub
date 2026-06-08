@@ -344,7 +344,7 @@ export default function Combos() {
 
   return (
     <div className="page-wrap">
-      <div className="page-header" style={{ '--page-color': '#a06cd5' }}>
+      <div className="page-header" style={{ '--page-color': '#d4622a' }}>
         <h1>💥 Combo Searcher</h1>
         <p>
           Search for card-specific combos, or explore popular combo types and examples below.
