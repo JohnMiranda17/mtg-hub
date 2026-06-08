@@ -44,7 +44,7 @@ function updateStreak(won) {
 }
 
 /* ── Hint definitions ─────────────────────────────────────────────────────── */
-const MAX_GUESSES = 5;
+const MAX_GUESSES = 6;
 
 function extractKeywords(card) {
   const oracle = card.oracle_text ?? '';
@@ -64,6 +64,7 @@ function getHints(card) {
     { label: 'Mana Cost',  value: card.mana_cost || '{0}' },
     { label: 'First Letter', value: `The card name starts with "${card.name[0].toUpperCase()}"` },
     { label: 'Keywords',   value: extractKeywords(card) },
+    { label: 'Set',        value: card.set_name },
     { label: 'Art Crop',   value: card.image_uris?.art_crop ?? card.card_faces?.[0]?.image_uris?.art_crop ?? null, isArt: true },
   ];
 }
@@ -195,7 +196,7 @@ export default function Mtgle() {
       {/* Instructions */}
       {game.guesses.length === 0 && !gameOver && (
         <p className="mtgle-instructions">
-          Guess the MTG card! Card type is free — each wrong answer reveals another hint. 5 guesses total.
+          Guess the MTG card! Card type is free — each wrong answer reveals another hint. 6 guesses total.
         </p>
       )}
 

@@ -9,6 +9,7 @@ const MAIN_LINKS = [
   { to: '/prices',      label: '💰 Prices'                },
   { to: '/board-state', label: '⚔️ Board State'           },
   { to: '/combos',      label: '💥 Combos'                },
+  { to: '/mtgle',       label: '🎮 MTGLE'                 },
 ];
 
 const SOCIAL_LINKS = [

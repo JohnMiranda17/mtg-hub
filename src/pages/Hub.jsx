@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import Mtgle from '../components/Mtgle';
 import Spotlight from '../components/Spotlight';
 
 const TOOLS = [
@@ -38,6 +37,13 @@ const TOOLS = [
     description: 'Analyze a Magic game board state. Describe the battlefield, hand, graveyard, and stack — get interaction and combat analysis.',
     color: '#9a4ac9',
   },
+  {
+    to: '/mtgle',
+    icon: '🎮',
+    name: 'MTGLE',
+    description: 'Daily MTG card puzzle. Guess today\'s card from hints — card type, mana cost, set, and art crop. 6 guesses.',
+    color: '#e07b39',
+  },
 ];
 
 export default function Hub() {
@@ -59,10 +65,6 @@ export default function Hub() {
       </div>
 
       <Spotlight />
-
-      <div className="hub-mtgle-section">
-        <Mtgle />
-      </div>
     </div>
   );
 }
