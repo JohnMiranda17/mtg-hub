@@ -159,9 +159,9 @@ export default function Mtgle() {
     });
   }
 
-  // How many hints to show = number of wrong guesses so far (up to 5)
+  // Card Type is free (always shown); each wrong guess reveals the next hint
   const wrongCount  = game ? game.guesses.filter(g => !g.correct).length : 0;
-  const hintsToShow = card ? getHints(card).slice(0, wrongCount) : [];
+  const hintsToShow = card ? getHints(card).slice(0, Math.max(1, wrongCount + 1)) : [];
   const puzzleNum   = dayNumber() % MTGLE_POOL.length + 1;
   const gameOver    = game?.won || game?.lost;
 
@@ -195,7 +195,7 @@ export default function Mtgle() {
       {/* Instructions */}
       {game.guesses.length === 0 && !gameOver && (
         <p className="mtgle-instructions">
-          Guess the MTG card! Each wrong answer reveals a new hint. 5 guesses to find it.
+          Guess the MTG card! Card type is free — each wrong answer reveals another hint. 5 guesses total.
         </p>
       )}
 
