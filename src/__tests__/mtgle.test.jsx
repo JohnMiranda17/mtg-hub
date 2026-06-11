@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, beforeEach, afterEach, describe, test, expect } from 'vitest';
-import Mtgle, { simplifyTypeLine, extractSubtypes } from '../components/Mtgle';
+import Mtgle, { simplifyTypeLine, extractSubtypes, shuffledIndices } from '../components/Mtgle';
 
 const MOCK_CARD = {
   name: 'Lightning Bolt',
@@ -146,6 +146,27 @@ describe('extractSubtypes', () => {
 
   test('handles kindred supertype', () => {
     expect(extractSubtypes('Kindred Sorcery — Shapeshifter')).toBe('Kindred, Shapeshifter');
+  });
+});
+
+describe('shuffledIndices', () => {
+  test('returns a permutation of 0..length-1', () => {
+    const order = shuffledIndices(56, 20240101);
+    expect(order.length).toBe(56);
+    expect([...order].sort((a, b) => a - b)).toEqual(Array.from({ length: 56 }, (_, i) => i));
+  });
+
+  test('is not just the original sequential order', () => {
+    const order = shuffledIndices(56, 20240101);
+    expect(order).not.toEqual(Array.from({ length: 56 }, (_, i) => i));
+  });
+
+  test('is deterministic for the same seed', () => {
+    expect(shuffledIndices(56, 20240101)).toEqual(shuffledIndices(56, 20240101));
+  });
+
+  test('different seeds produce different orders', () => {
+    expect(shuffledIndices(56, 20240101)).not.toEqual(shuffledIndices(56, 999));
   });
 });
 
