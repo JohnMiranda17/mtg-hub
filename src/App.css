@@ -922,6 +922,28 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .spotlight-tip { background: rgba(201,168,76,.07); border-left: 3px solid var(--gold-dim); border-radius: 0 6px 6px 0; color: var(--text-dim); font-size: .82rem; line-height: 1.6; margin-top: .25rem; padding: .55rem .9rem; }
 .spotlight-tip-label { color: var(--gold); font-weight: 700; margin-right: .35rem; }
 
+/* ── Spotlight Archive (Helper tab) ──────────────────────────────────────── */
+.spotlight-archive-intro { color: var(--text-dim); font-size: .87rem; line-height: 1.6; margin-bottom: 1.5rem; max-width: 680px; }
+.spotlight-archive-list { display: flex; flex-direction: column; gap: .4rem; }
+.spotlight-archive-entry { background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--sa-color, var(--gold)); border-radius: var(--radius); overflow: hidden; transition: border-color .15s; }
+.spotlight-archive-entry.sa-today { border-left-width: 4px; }
+.spotlight-archive-entry.sa-open { border-color: var(--sa-color, var(--gold)); }
+.spotlight-archive-row { align-items: center; background: none; border: none; color: var(--text); cursor: pointer; display: flex; gap: .75rem; padding: .75rem 1rem; text-align: left; width: 100%; transition: background .15s; }
+.spotlight-archive-row:hover { background: rgba(255,255,255,.04); }
+.sa-icon { flex-shrink: 0; font-size: 1.2rem; line-height: 1; }
+.sa-title { flex: 1; font-size: .9rem; font-weight: 600; }
+.sa-badge { background: rgba(201,168,76,.18); border: 1px solid var(--gold-dim); border-radius: 4px; color: var(--gold); font-size: .65rem; font-weight: 700; letter-spacing: .06em; padding: .15rem .45rem; text-transform: uppercase; }
+.sa-chevron { color: var(--text-dim); font-size: .7rem; flex-shrink: 0; }
+.sa-body { border-top: 1px solid var(--border); padding: .9rem 1.1rem 1.1rem; }
+.sa-desc { color: var(--text-dim); font-size: .86rem; line-height: 1.6; margin-bottom: .85rem; }
+.sa-notes { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 6px; margin-bottom: .85rem; padding: .75rem .9rem; }
+.sa-notes-label { color: var(--sa-color, var(--gold)); font-size: .68rem; font-weight: 700; letter-spacing: .07em; margin-bottom: .35rem; text-transform: uppercase; }
+.sa-notes p { color: var(--text); font-size: .84rem; line-height: 1.7; margin: 0; }
+.sa-tip { background: rgba(201,168,76,.07); border-left: 3px solid var(--gold-dim); border-radius: 0 6px 6px 0; color: var(--text-dim); font-size: .82rem; line-height: 1.6; margin-bottom: .85rem; padding: .55rem .9rem; }
+.sa-tip-label { color: var(--gold); font-weight: 700; margin-right: .35rem; }
+.sa-browse-link { color: var(--sa-color, var(--gold)); font-size: .8rem; text-decoration: none; }
+.sa-browse-link:hover { text-decoration: underline; }
+
 /* ── Timing guide (Helper) ────────────────────────────────────────────────── */
 .timing-speed-list { display: flex; flex-direction: column; gap: .5rem; }
 .timing-speed-card { background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--speed-color, var(--gold)); border-radius: var(--radius); cursor: pointer; padding: .75rem 1rem; transition: background .15s; }

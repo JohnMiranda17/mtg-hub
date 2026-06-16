@@ -7,6 +7,7 @@ import ConceptsGuide from '../components/helper/ConceptsGuide';
 import TimingGuide from '../components/helper/TimingGuide';
 import RulesChat from './RulesChat';
 import ArchetypesGuide from '../components/helper/ArchetypesGuide';
+import SpotlightArchive from '../components/helper/SpotlightArchive';
 import { keywords } from '../data/keywords';
 
 const TABS = [
@@ -21,6 +22,7 @@ const TABS = [
   { id: 'deckbuilding', label: '🏗 Deck Building'  },
   { id: 'archetypes',   label: '🏛 Archetypes'     },
   { id: 'ai-rules',     label: '🤖 Rules AI'       },
+  { id: 'spotlight',    label: '🌟 Spotlights'     },
 ];
 
 const CATEGORIES = [
@@ -88,8 +90,9 @@ export default function Helper() {
         <ConceptsGuide activeTab={tab} />}
 
       {tab === 'timing'     && <TimingGuide />}
-      {tab === 'archetypes' && <ArchetypesGuide />}
-      {tab === 'ai-rules' && <RulesChat />}
+      {tab === 'archetypes'  && <ArchetypesGuide />}
+      {tab === 'ai-rules'    && <RulesChat />}
+      {tab === 'spotlight'   && <SpotlightArchive />}
     </div>
   );
 }

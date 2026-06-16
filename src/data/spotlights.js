@@ -1,0 +1,78 @@
+export const SPOTLIGHTS = [
+  {
+    title: 'Artifact Removal',
+    icon: '🔧',
+    color: '#4a8fc9',
+    desc: 'Dealing with troublesome artifacts is essential in every format — mana rocks, equipment, and combo pieces all need answering.',
+    query: '(o:"destroy target artifact" or o:"exile target artifact") r:common order:edhrec',
+    tip: 'Every deck should run at least 2–3 artifact answers. Even cheap commons can neutralize a powerful mana rock or equipment.',
+    notes: 'Artifact removal is a core part of the interaction package in any format. In Commander, mana rocks like Sol Ring and Arcane Signet are everywhere — having answers keeps you from falling behind on mana acceleration. Look for flexible cards that can hit artifacts AND enchantments (like Naturalize effects) to save deck slots.',
+  },
+  {
+    title: 'Enchantment Answers',
+    icon: '💫',
+    color: '#a06cd5',
+    desc: 'Enchantments are harder to remove than creatures. These spells deal with enchantment-based strategies that can take over games.',
+    query: '(o:"destroy target enchantment" or o:"exile target enchantment") order:edhrec -t:land',
+    tip: 'Enchantment removal is often overlooked by new players — but enchantments like Rhystic Study or Smothering Tithe can win games on their own.',
+    notes: 'Unlike creatures, enchantments do not have summoning sickness and rarely have activated abilities that require them to tap. This means they provide value every turn without effort. Rhystic Study draws cards every time an opponent casts a spell; Smothering Tithe generates treasure tokens unless opponents pay 2 mana. Both can be game-defining within two turns of hitting the board.',
+  },
+  {
+    title: 'Mono Red Burn',
+    icon: '🔥',
+    color: '#e06040',
+    desc: "Red's signature playstyle: deal direct damage to win fast. These are the backbone of aggressive red decks in every format.",
+    query: 'c:r t:instant o:"deals" o:"damage" r:common order:edhrec',
+    tip: 'Burn spells are flexible — they target creatures OR players. That versatility is why red is always a top aggressive option.',
+    notes: 'Burn is the most efficient win condition in Magic: the lower the mana cost, the more damage you can deal per turn. Lightning Bolt deals 3 damage for 1 mana — the gold standard. Key concept: burn wins by going wide (many spells) rather than tall (one big creature). In formats like Modern, a typical burn hand can deal lethal damage by turn 3–4 with the right sequence.',
+  },
+  {
+    title: 'Card Draw Spells',
+    icon: '🃏',
+    color: '#4ac9c9',
+    desc: "Keeping your hand full is how you win the long game. Learn these and you'll never run out of options.",
+    query: 'c:u (t:instant or t:sorcery) o:"draw" r:common order:edhrec',
+    tip: 'Card draw is the single most powerful effect category in Magic. More cards = more choices = more winning.',
+    notes: 'Blue is the master of card advantage, but every color has some form of draw. In Commander especially, engines that draw cards repeatedly (Rhystic Study, Phyrexian Arena, Sylvan Library) are more powerful than one-shot draw spells because they compound over multiple turns. The general rule: a card that draws 2+ cards for 3 mana or less is very strong; a card that draws 1 for 2 mana is average.',
+  },
+  {
+    title: 'Mana Ramp',
+    icon: '🌿',
+    color: '#4ac97a',
+    desc: 'Green acceleration lets you cast big spells early. Getting ahead on mana is a reliable path to victory in any format.',
+    query: 'c:g t:sorcery o:"search your library" o:"land" r:common order:edhrec',
+    tip: "A turn-2 ramp spell means you're a mana ahead for the rest of the game — a huge compounding advantage.",
+    notes: 'Ramp refers to any effect that puts you ahead on mana: land search (Cultivate, Kodama\'s Reach), mana artifacts (Sol Ring, Arcane Signet), or creatures with mana abilities (Llanowar Elves, Birds of Paradise). The golden ratio for Commander is roughly 10 ramp pieces and 10 card draw effects. Land-based ramp is more resilient than artifact ramp because lands are harder to remove.',
+  },
+  {
+    title: 'Creature Removal',
+    icon: '🎯',
+    color: '#c94a4a',
+    desc: "Deal with the most dangerous threats before they take over the board. Essential in any deck that needs to interact.",
+    query: '(o:"destroy target creature" or o:"exile target creature") r:common order:edhrec',
+    tip: "You can't ignore your opponent's best creatures forever. Pack removal to handle the threats that would otherwise end the game.",
+    notes: 'Exile is generally better than destroy because destroyed creatures can be returned from the graveyard (recursion). Swords to Plowshares and Path to Exile are the gold standard in white for this reason. Instant-speed removal is more flexible than sorcery-speed because you can wait to see if the creature attacks, blocks, or triggers before deciding to remove it.',
+  },
+  {
+    title: 'Commander Staples',
+    icon: '⭐',
+    color: '#c9a84c',
+    desc: 'Cards that appear across Commander decks of all kinds. Learning why these are good builds your MTG intuition fast.',
+    query: 'is:commander_staple order:edhrec r:rare -t:land',
+    tip: 'Staples are worth knowing by heart — recognizing them tells you a lot about what an opponent is planning.',
+    notes: 'Commander staples are cards so generically powerful that they fit into almost any deck regardless of theme or strategy. Sol Ring (colorless mana ramp), Cyclonic Rift (blue board wipe), Demonic Tutor (black tutor), and Rhystic Study (blue draw engine) are the most iconic. Understanding WHY each staple is powerful teaches you the core values of Magic: tempo, card advantage, and efficiency.',
+  },
+  {
+    title: 'Flying Threats',
+    icon: '🦅',
+    color: '#6080d0',
+    desc: 'Flying is the most common evasion keyword — these creatures are reliable closers and hard to block.',
+    query: 'kw:flying r:uncommon t:creature cmc>=3 order:edhrec c:w',
+    tip: "If your opponent builds up flyers and you have no answers, you'll take damage every turn. Always pack flying answers.",
+    notes: 'Evasion keywords (Flying, Menace, Trample, Unblockable) make creatures hard to deal with in combat. Flying is the most common because white and blue both excel at it, making those colors great at closing out games through the air. In Commander, a late-game Avacyn, Angel of Hope or Blightsteel Colossus with flying can threaten multiple players at once. Reach creatures are the most common flying counter in green.',
+  },
+];
+
+export function dailySpotlightIndex() {
+  return Math.floor(Date.now() / 86400000) % SPOTLIGHTS.length;
+}
