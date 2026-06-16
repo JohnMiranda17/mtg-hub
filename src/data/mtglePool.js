@@ -71,7 +71,7 @@ export const MTGLE_POOL = [
   "Yisan, the Wanderer Bard","Selvala, Heart of the Wilds","Sisay, Weatherlight Captain",
   "Prossh, Skyraider of Kher","Sliver Queen","Sliver Overlord","Oona, Queen of the Fae",
   "Tasigur, the Golden Fang","Kess, Dissident Mage","Leovold, Emissary of Trest",
-  "Nekusar, the Mindrazer","Zedruu the Greathearted","Meren of Clan Nel Toth",
+  "Nekusar, the Mindrazer","Zedruu the Greathearted",
   "Solitude","Endurance","Fury","Subtlety","Grief",
   "Cavern of Souls","Mana Confluence",
   // Modern/Legacy staples
