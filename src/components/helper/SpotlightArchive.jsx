@@ -1,68 +1,83 @@
 import { useState } from 'react';
 import { SPOTLIGHTS, dailySpotlightIndex } from '../../data/spotlights';
 
+// Returns expired spotlights ordered most-recently-expired first.
+// Today's spotlight is still live on the Hub, so it is excluded.
+export function expiredSpotlights(todayIdx = dailySpotlightIndex()) {
+  const n = SPOTLIGHTS.length;
+  return Array.from({ length: n - 1 }, (_, i) => ({
+    spot: SPOTLIGHTS[(todayIdx - (i + 1) + n) % n],
+    daysAgo: i + 1,
+  }));
+}
+
 export default function SpotlightArchive() {
   const todayIdx = dailySpotlightIndex();
-  const [open, setOpen] = useState(todayIdx);
+  const entries  = expiredSpotlights(todayIdx);
+  const [open, setOpen] = useState(0); // open the most-recent entry by default
 
   return (
     <div className="spotlight-archive">
       <div className="spotlight-archive-intro">
         <p>
-          Each spotlight covers a core MTG concept with curated example cards and notes for new players.
-          A new spotlight rotates in every day — check back to build up your knowledge over time.
+          Past New Player Spotlights — today's is still live on the Hub.
+          Each topic rotates daily; check back to collect the full set of notes.
         </p>
       </div>
 
-      <div className="spotlight-archive-list">
-        {SPOTLIGHTS.map((spot, i) => {
-          const isToday = i === todayIdx;
-          const isOpen  = i === open;
+      {entries.length === 0 ? (
+        <p className="sa-empty">No expired spotlights yet — come back tomorrow!</p>
+      ) : (
+        <div className="spotlight-archive-list">
+          {entries.map(({ spot, daysAgo }, i) => {
+            const isOpen = i === open;
+            const label  = daysAgo === 1 ? 'Yesterday' : `${daysAgo} days ago`;
 
-          return (
-            <div
-              key={i}
-              className={`spotlight-archive-entry${isToday ? ' sa-today' : ''}${isOpen ? ' sa-open' : ''}`}
-              style={{ '--sa-color': spot.color }}
-            >
-              <button
-                className="spotlight-archive-row"
-                onClick={() => setOpen(isOpen ? -1 : i)}
-                aria-expanded={isOpen}
+            return (
+              <div
+                key={spot.title}
+                className={`spotlight-archive-entry${isOpen ? ' sa-open' : ''}`}
+                style={{ '--sa-color': spot.color }}
               >
-                <span className="sa-icon">{spot.icon}</span>
-                <span className="sa-title">{spot.title}</span>
-                {isToday && <span className="sa-badge">Today</span>}
-                <span className="sa-chevron">{isOpen ? '▲' : '▼'}</span>
-              </button>
+                <button
+                  className="spotlight-archive-row"
+                  onClick={() => setOpen(isOpen ? -1 : i)}
+                  aria-expanded={isOpen}
+                >
+                  <span className="sa-icon">{spot.icon}</span>
+                  <span className="sa-title">{spot.title}</span>
+                  <span className="sa-badge">{label}</span>
+                  <span className="sa-chevron">{isOpen ? '▲' : '▼'}</span>
+                </button>
 
-              {isOpen && (
-                <div className="sa-body">
-                  <p className="sa-desc">{spot.desc}</p>
+                {isOpen && (
+                  <div className="sa-body">
+                    <p className="sa-desc">{spot.desc}</p>
 
-                  <div className="sa-notes">
-                    <div className="sa-notes-label">Deep Dive</div>
-                    <p>{spot.notes}</p>
+                    <div className="sa-notes">
+                      <div className="sa-notes-label">Deep Dive</div>
+                      <p>{spot.notes}</p>
+                    </div>
+
+                    <div className="sa-tip">
+                      <span className="sa-tip-label">New Player Tip:</span> {spot.tip}
+                    </div>
+
+                    <a
+                      href={`https://scryfall.com/search?q=${encodeURIComponent(spot.query)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="sa-browse-link"
+                    >
+                      Browse example cards on Scryfall ↗
+                    </a>
                   </div>
-
-                  <div className="sa-tip">
-                    <span className="sa-tip-label">New Player Tip:</span> {spot.tip}
-                  </div>
-
-                  <a
-                    href={`https://scryfall.com/search?q=${encodeURIComponent(spot.query)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="sa-browse-link"
-                  >
-                    Browse example cards on Scryfall ↗
-                  </a>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

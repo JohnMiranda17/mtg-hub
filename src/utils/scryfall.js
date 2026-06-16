@@ -45,6 +45,17 @@ export async function searchCards(query) {
   return { data: json.data ?? [], total: json.total_cards ?? 0 };
 }
 
+// Not cached — each call must return a different random card.
+export async function getRandomCard(query) {
+  const url = `${BASE}/cards/random?q=${encodeURIComponent(query)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    if (res.status === 404) throw new Error('No cards match those filters. Try broadening your search.');
+    throw new Error(`Scryfall error ${res.status}`);
+  }
+  return res.json();
+}
+
 export function formatPrice(usd) {
   if (usd == null) return '—';
   return `$${parseFloat(usd).toFixed(2)}`;

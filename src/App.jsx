@@ -12,7 +12,8 @@ import Friends      from './pages/Friends';
 import Feed         from './pages/Feed';
 import Trading      from './pages/Trading';
 import Combos       from './pages/Combos';
-import MtglePage    from './pages/MtglePage';
+import MtglePage       from './pages/MtglePage';
+import CustomMtglePage from './pages/CustomMtglePage';
 import './App.css';
 
 // Redirect to profile setup if user just signed up and hasn't chosen a username yet
@@ -35,7 +36,8 @@ function AppRoutes() {
           <Route path="/prices"      element={<RequireProfileSetup><Prices /></RequireProfileSetup>} />
           <Route path="/board-state" element={<RequireProfileSetup><BoardState /></RequireProfileSetup>} />
           <Route path="/combos"     element={<RequireProfileSetup><Combos /></RequireProfileSetup>} />
-          <Route path="/mtgle"      element={<RequireProfileSetup><MtglePage /></RequireProfileSetup>} />
+          <Route path="/mtgle"        element={<RequireProfileSetup><MtglePage /></RequireProfileSetup>} />
+          <Route path="/custom-mtgle" element={<RequireProfileSetup><CustomMtglePage /></RequireProfileSetup>} />
           <Route path="/feed"       element={<RequireProfileSetup><Feed /></RequireProfileSetup>} />
           <Route path="/friends"    element={<RequireProfileSetup><Friends /></RequireProfileSetup>} />
           <Route path="/trading"    element={<RequireProfileSetup><Trading /></RequireProfileSetup>} />

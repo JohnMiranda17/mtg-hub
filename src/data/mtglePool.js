@@ -1,6 +1,6 @@
 // Curated pool of well-known MTG cards used for the daily MTGLE puzzle.
 // Covers commander staples, format pillars, and iconic cards across eras.
-// Rotate through these by dayNumber % pool.length — no API dependency needed.
+// Duplicates removed; shuffledIndices() in Mtgle.jsx randomises the play order.
 
 export const MTGLE_POOL = [
   // Commander staples
@@ -10,6 +10,8 @@ export const MTGLE_POOL = [
   "Temur Sabertooth","Ghostly Prison","Propaganda","Basalt Monolith","Sensei's Divining Top",
   "Skullclamp","Mana Vault","Grim Monolith","Chrome Mox","Mox Diamond",
   "Ancient Tomb","Cabal Coffers","Nykthos, Shrine to Nyx","Serra's Sanctum","Glacial Chasm",
+  "Mana Crypt","Gaea's Cradle","Gilded Lotus","Chromatic Lantern","Coalition Relic",
+  "Staff of Domination","Oblivion Stone","Vedalken Orrery","Helm of the Host",
   // Classic creatures
   "Tarmogoyf","Dark Confidant","Snapcaster Mage","Stoneforge Mystic","True-Name Nemesis",
   "Goblin Guide","Death's Shadow","Primeval Titan","Sun Titan","Grave Titan",
@@ -17,6 +19,16 @@ export const MTGLE_POOL = [
   "Urabrask the Hidden","Vorinclex, Voice of Hunger","Blightsteel Colossus",
   "Emrakul, the Aeons Torn","Ulamog, the Infinite Gyre","Kozilek, Butcher of Truth",
   "Craterhoof Behemoth","Consecrated Sphinx","Seedborn Muse","Opposition Agent",
+  "Griselbrand","Thalia, Guardian of Thraben","Aven Mindcensor","Grand Abolisher",
+  "Gaddock Teeg","Drannith Magistrate","Linvala, Keeper of Silence","Scavenging Ooze",
+  "Glen Elendra Archmage","Vendilion Clique","Ragavan, Nimble Pilferer",
+  "Dragon's Rage Channeler","Murktide Regent","Seasoned Pyromancer","Arclight Phoenix",
+  "Thassa's Oracle","Yawgmoth, Thran Physician","Kinnan, Bonder Prodigy",
+  "Meren of Clan Nel Toth","Dockside Extortionist","Phyrexian Obliterator",
+  "Animar, Soul of Elements","Yuriko, the Tiger's Shadow","Niv-Mizzet, Parun",
+  "Purphoros, God of the Forge","Heliod, Sun-Crowned","Erebos, God of the Dead",
+  "Thassa, God of the Sea","Kroxa, Titan of Death's Hunger","Eternal Witness",
+  "Azusa, Lost but Seeking","Oracle of Mul Daya","Exploration","Burgeoning",
   // Famous instants & sorceries
   "Lightning Bolt","Counterspell","Swords to Plowshares","Path to Exile","Brainstorm",
   "Ponder","Preordain","Serum Visions","Gitaxian Probe","Ancestral Recall",
@@ -26,19 +38,30 @@ export const MTGLE_POOL = [
   "Reanimate","Animate Dead","Entomb","Buried Alive","Protean Hulk",
   "Sinkhole","Strip Mine","Wasteland","Life from the Loam","Crucible of Worlds",
   "Green Sun's Zenith","Tooth and Nail","Natural Order","Imperial Seal","Mystical Tutor",
+  "Dark Ritual","Cabal Ritual","High Tide","Ad Nauseam","Tainted Pact","Doomsday",
+  "Living Death","Wheel of Fortune","Windfall","Faithless Looting",
+  "Balance","Hurkyl's Recall","Enlightened Tutor","Worldly Tutor","Personal Tutor",
+  "Eladamri's Call","Finale of Devastation","Mental Misstep","Swan Song","Arcane Denial",
+  "Eidolon of the Great Revel","Lightning Helix","Boros Charm",
+  "Teferi's Protection","Anguished Unmaking","Prismatic Ending","Expressive Iteration",
   // Famous enchantments & artifacts
-  "Doubling Season","Parallel Lives","Smothering Tithe","Rhystic Study","Mystic Remora",
+  "Doubling Season","Parallel Lives","Smothering Tithe","Mystic Remora",
   "Necropotence","Phyrexian Unlife","Rest in Peace","Leyline of the Void","Deafening Silence",
   "Omniscience","Teferi's Moat","Humility","Moat","Island Sanctuary",
   "Bolas's Citadel","Aetherflux Reservoir","Isochron Scepter","Ensnaring Bridge",
-  "Scroll Rack","Future Sight","Mirri's Guile","Sylvan Library","Defense of the Heart",
+  "Scroll Rack","Future Sight","Mirri's Guile","Defense of the Heart",
   "Urza's Saga","Yawgmoth's Will","Past in Flames","Underworld Breach","Echo of Eons",
+  "Blood Moon","Back to Basics","Null Rod","Stony Silence","Grafdigger's Cage",
+  "Rule of Law","Ethersworn Canonist","Notion Thief",
+  "Sword of Feast and Famine","Sword of Fire and Ice","Umezawa's Jitte","Batterskull",
+  "Phyrexian Metamorph","Mox Opal","Walking Ballista",
   // Planeswalkers
   "Jace, the Mind Sculptor","Liliana of the Veil","Tezzeret the Seeker",
   "Elspeth, Sun's Champion","Garruk Wildspeaker","Ajani Goldmane",
   "Chandra, Torch of Defiance","Teferi, Hero of Dominaria","Karn Liberated",
   "Ugin, the Spirit Dragon","Nicol Bolas, God-Pharaoh","Vraska, Relic Seeker",
   "Wrenn and Six","Oko, Thief of Crowns","Uro, Titan of Nature's Wrath",
+  "Teferi, Time Raveler","Narset, Parter of Veils",
   // Iconic commanders
   "Atraxa, Praetors' Voice","Omnath, Locus of Creation","Korvold, Fae-Cursed King",
   "Muldrotha, the Gravetide","Edgar Markov","Ur-Dragon","Kaalia of the Vast",
@@ -46,10 +69,15 @@ export const MTGLE_POOL = [
   "Tymna the Weaver","Thrasios, Triton Hero","Magda, Brazen Outlaw",
   "Winota, Joiner of Forces","Derevi, Empyrial Tactician","Zur the Enchanter",
   "Yisan, the Wanderer Bard","Selvala, Heart of the Wilds","Sisay, Weatherlight Captain",
+  "Prossh, Skyraider of Kher","Sliver Queen","Sliver Overlord","Oona, Queen of the Fae",
+  "Tasigur, the Golden Fang","Kess, Dissident Mage","Leovold, Emissary of Trest",
+  "Nekusar, the Mindrazer","Zedruu the Greathearted","Meren of Clan Nel Toth",
+  "Solitude","Endurance","Fury","Subtlety","Grief",
+  "Cavern of Souls","Mana Confluence",
   // Modern/Legacy staples
   "Thoughtseize","Inquisition of Kozilek","Force of Will","Force of Negation",
   "Mana Drain","Fierce Guardianship","Deflecting Swat","Flusterstorm","Spell Pierce",
-  "Fatal Push","Abrupt Decay","Assassin's Trophy","Vindicate","Swords to Plowshares",
+  "Fatal Push","Abrupt Decay","Assassin's Trophy","Vindicate",
   "Cryptic Command","Fact or Fiction","Dig Through Time","Treasure Cruise",
   "Young Pyromancer","Monastery Mentor","Thing in the Ice","Delver of Secrets",
   "Mishra's Workshop","Tolarian Academy","Library of Alexandria","Bazaar of Baghdad",

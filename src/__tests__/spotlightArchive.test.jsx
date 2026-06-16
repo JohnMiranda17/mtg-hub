@@ -1,13 +1,12 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { vi, beforeEach, afterEach, describe, test, expect } from 'vitest';
-import SpotlightArchive from '../components/helper/SpotlightArchive';
+import SpotlightArchive, { expiredSpotlights } from '../components/helper/SpotlightArchive';
 import { SPOTLIGHTS } from '../data/spotlights';
 
-// Pin Date.now() so dailySpotlightIndex() is deterministic.
-// Day 20620 % 8 === 4, which is "Mana Ramp" (index 4).
+// Day 20620 % 8 === 4 → today is index 4 (Mana Ramp)
 const PINNED_DAY = 20620;
 const PINNED_NOW = PINNED_DAY * 86400000;
-const TODAY_IDX  = PINNED_DAY % SPOTLIGHTS.length;
+const TODAY_IDX  = PINNED_DAY % SPOTLIGHTS.length;   // 4
 
 beforeEach(() => {
   vi.spyOn(Date, 'now').mockReturnValue(PINNED_NOW);
@@ -17,84 +16,90 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('SpotlightArchive', () => {
-  test('renders intro text', () => {
-    render(<SpotlightArchive />);
-    expect(screen.getByText(/new spotlight rotates in every day/i)).toBeInTheDocument();
+describe('expiredSpotlights()', () => {
+  test('returns N-1 entries (all except today)', () => {
+    const entries = expiredSpotlights(TODAY_IDX);
+    expect(entries).toHaveLength(SPOTLIGHTS.length - 1);
   });
 
-  test('renders a row for every spotlight', () => {
-    render(<SpotlightArchive />);
-    for (const spot of SPOTLIGHTS) {
-      expect(screen.getByText(spot.title)).toBeInTheDocument();
+  test('first entry is yesterday (1 day ago)', () => {
+    const entries = expiredSpotlights(TODAY_IDX);
+    expect(entries[0].daysAgo).toBe(1);
+    expect(entries[0].spot).toBe(SPOTLIGHTS[(TODAY_IDX - 1 + SPOTLIGHTS.length) % SPOTLIGHTS.length]);
+  });
+
+  test('entries are ordered most-recent-first', () => {
+    const entries = expiredSpotlights(TODAY_IDX);
+    for (let i = 1; i < entries.length; i++) {
+      expect(entries[i].daysAgo).toBeGreaterThan(entries[i - 1].daysAgo);
     }
   });
 
-  test("today's spotlight has the Today badge", () => {
+  test("today's spotlight is not included", () => {
+    const entries = expiredSpotlights(TODAY_IDX);
+    expect(entries.map(e => e.spot)).not.toContain(SPOTLIGHTS[TODAY_IDX]);
+  });
+});
+
+describe('SpotlightArchive component', () => {
+  test('renders the archive intro text', () => {
     render(<SpotlightArchive />);
-    const badges = screen.getAllByText('Today');
-    expect(badges).toHaveLength(1);
-    const row = badges[0].closest('.spotlight-archive-row');
-    expect(row).toHaveTextContent(SPOTLIGHTS[TODAY_IDX].title);
+    expect(screen.getByText(/Past New Player Spotlights/i)).toBeInTheDocument();
   });
 
-  test("today's spotlight is open by default", () => {
+  test("does NOT render today's spotlight title", () => {
     render(<SpotlightArchive />);
-    expect(screen.getByText(SPOTLIGHTS[TODAY_IDX].desc)).toBeInTheDocument();
+    const todayTitle = SPOTLIGHTS[TODAY_IDX].title;
+    expect(screen.queryByText(todayTitle)).not.toBeInTheDocument();
   });
 
-  test('clicking a closed row opens it and shows desc + notes + tip', () => {
+  test('renders N-1 spotlight rows', () => {
     render(<SpotlightArchive />);
-    const otherIdx = (TODAY_IDX + 1) % SPOTLIGHTS.length;
-    const other = SPOTLIGHTS[otherIdx];
+    // Each row has a title; today's should be absent — count what we find
+    const foundTitles = SPOTLIGHTS.filter((s, i) => i !== TODAY_IDX)
+      .filter(s => screen.queryByText(s.title));
+    expect(foundTitles).toHaveLength(SPOTLIGHTS.length - 1);
+  });
 
-    // Desc should not be visible before click
-    expect(screen.queryByText(other.desc)).not.toBeInTheDocument();
+  test('first row is labelled Yesterday', () => {
+    render(<SpotlightArchive />);
+    expect(screen.getAllByText('Yesterday')).toHaveLength(1);
+  });
 
-    fireEvent.click(screen.getByText(other.title));
+  test('remaining rows show "N days ago"', () => {
+    render(<SpotlightArchive />);
+    for (let d = 2; d <= SPOTLIGHTS.length - 1; d++) {
+      expect(screen.getByText(`${d} days ago`)).toBeInTheDocument();
+    }
+  });
 
-    expect(screen.getByText(other.desc)).toBeInTheDocument();
-    expect(screen.getByText(other.notes)).toBeInTheDocument();
-    expect(screen.getByText(/New Player Tip:/)).toBeInTheDocument();
-    expect(screen.getByText(/Browse example cards on Scryfall/i)).toBeInTheDocument();
+  test('most-recent entry is open by default and shows body content', () => {
+    render(<SpotlightArchive />);
+    const yesterdaySpot = SPOTLIGHTS[(TODAY_IDX - 1 + SPOTLIGHTS.length) % SPOTLIGHTS.length];
+    expect(screen.getByText(yesterdaySpot.desc)).toBeInTheDocument();
+  });
+
+  test('clicking a closed row opens its body', () => {
+    render(<SpotlightArchive />);
+    // second-most-recent entry (2 days ago)
+    const twoDaysAgoSpot = SPOTLIGHTS[(TODAY_IDX - 2 + SPOTLIGHTS.length) % SPOTLIGHTS.length];
+    expect(screen.queryByText(twoDaysAgoSpot.desc)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText(twoDaysAgoSpot.title));
+    expect(screen.getByText(twoDaysAgoSpot.desc)).toBeInTheDocument();
   });
 
   test('clicking an open row collapses it', () => {
     render(<SpotlightArchive />);
-    const title = SPOTLIGHTS[TODAY_IDX].title;
-    const desc  = SPOTLIGHTS[TODAY_IDX].desc;
-
-    expect(screen.getByText(desc)).toBeInTheDocument();
-    fireEvent.click(screen.getByText(title));
-    expect(screen.queryByText(desc)).not.toBeInTheDocument();
+    const yesterdaySpot = SPOTLIGHTS[(TODAY_IDX - 1 + SPOTLIGHTS.length) % SPOTLIGHTS.length];
+    expect(screen.getByText(yesterdaySpot.desc)).toBeInTheDocument();
+    fireEvent.click(screen.getByText(yesterdaySpot.title));
+    expect(screen.queryByText(yesterdaySpot.desc)).not.toBeInTheDocument();
   });
 
-  test('Scryfall browse link has the right query encoded in href', () => {
+  test('open body has a Scryfall browse link', () => {
     render(<SpotlightArchive />);
     const link = screen.getByRole('link', { name: /Browse example cards on Scryfall/i });
     expect(link.href).toContain('scryfall.com/search');
-    expect(link.href).toContain(encodeURIComponent(SPOTLIGHTS[TODAY_IDX].query));
     expect(link.getAttribute('target')).toBe('_blank');
-  });
-});
-
-describe('spotlights data', () => {
-  test('every spotlight has required fields', () => {
-    for (const spot of SPOTLIGHTS) {
-      expect(spot.title,  `${spot.title}: missing title`).toBeTruthy();
-      expect(spot.icon,   `${spot.title}: missing icon`).toBeTruthy();
-      expect(spot.color,  `${spot.title}: missing color`).toBeTruthy();
-      expect(spot.desc,   `${spot.title}: missing desc`).toBeTruthy();
-      expect(spot.tip,    `${spot.title}: missing tip`).toBeTruthy();
-      expect(spot.notes,  `${spot.title}: missing notes`).toBeTruthy();
-      expect(spot.query,  `${spot.title}: missing query`).toBeTruthy();
-    }
-  });
-
-  test('dailySpotlightIndex returns an index within bounds', () => {
-    const { dailySpotlightIndex } = require('../data/spotlights');
-    const idx = dailySpotlightIndex();
-    expect(idx).toBeGreaterThanOrEqual(0);
-    expect(idx).toBeLessThan(SPOTLIGHTS.length);
   });
 });

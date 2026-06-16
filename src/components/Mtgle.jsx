@@ -148,18 +148,25 @@ export function buildShareText(guesses, won, puzzleNum) {
 }
 
 /* ── Main MTGLE component ─────────────────────────────────────────────────── */
-export default function Mtgle() {
-  const [card, setCard]         = useState(null);
+// overrideCard: custom-mode card object (skips daily fetch, no localStorage/streak)
+// onNewGame:    callback fired when user wants to start fresh in custom mode
+export default function Mtgle({ overrideCard = null, onNewGame = null }) {
+  const isCustom = Boolean(overrideCard);
+
+  const [card, setCard]         = useState(isCustom ? overrideCard : null);
   const [loadError, setLoadError] = useState('');
   const [game, setGame]         = useState(null);
-  const [streak, setStreak]     = useState(loadStreak());
+  const [streak, setStreak]     = useState(() => isCustom ? null : loadStreak());
   const [guess, setGuess]       = useState('');
   const [shakeInput, setShakeInput] = useState(false);
   const [copied, setCopied]     = useState(false);
   const guessRef                = useRef('');
 
-  // Load today's card
   useEffect(() => {
+    if (isCustom) {
+      setGame({ date: todayStr(), guesses: [], won: false, lost: false });
+      return;
+    }
     const name = dailyCardName();
     getCardByName(name)
       .then(c => {
@@ -188,15 +195,16 @@ export default function Mtgle() {
 
     const updated = { ...game, guesses: newGuesses, won, lost };
     setGame(updated);
-    saveGame(updated);
+    if (!isCustom) saveGame(updated);
     setGuess('');
     guessRef.current = '';
 
     if (won || lost) {
-      const s = updateStreak(won);
-      setStreak(s);
+      if (!isCustom) {
+        const s = updateStreak(won);
+        setStreak(s);
+      }
     } else {
-      // Shake input briefly on wrong guess
       setShakeInput(true);
       setTimeout(() => setShakeInput(false), 600);
     }
@@ -211,10 +219,9 @@ export default function Mtgle() {
     });
   }
 
-  // Card Type is free (always shown); each wrong guess reveals the next hint
   const wrongCount  = game ? game.guesses.filter(g => !g.correct).length : 0;
   const hintsToShow = card ? getHints(card).slice(0, Math.max(1, wrongCount + 1)) : [];
-  const puzzleNum   = dayNumber() % MTGLE_POOL.length + 1;
+  const puzzleNum   = isCustom ? null : (dayNumber() % MTGLE_POOL.length + 1);
   const gameOver    = game?.won || game?.lost;
 
   if (loadError) {
@@ -236,12 +243,17 @@ export default function Mtgle() {
       <div className="mtgle-header">
         <div className="mtgle-title-row">
           <span className="mtgle-title">🎮 MTGLE</span>
-          <span className="mtgle-puzzle-num">#{puzzleNum}</span>
+          {isCustom
+            ? <span className="mtgle-puzzle-num mtgle-custom-badge">Custom</span>
+            : <span className="mtgle-puzzle-num">#{puzzleNum}</span>
+          }
         </div>
-        <div className="mtgle-streak-row">
-          <span className="mtgle-streak" title="Current streak">🔥 {streak.streak}</span>
-          <span className="mtgle-best"   title="Best streak">⭐ {streak.best}</span>
-        </div>
+        {!isCustom && streak && (
+          <div className="mtgle-streak-row">
+            <span className="mtgle-streak" title="Current streak">🔥 {streak.streak}</span>
+            <span className="mtgle-best"   title="Best streak">⭐ {streak.best}</span>
+          </div>
+        )}
       </div>
 
       {/* Instructions */}
@@ -255,7 +267,6 @@ export default function Mtgle() {
       <div className="mtgle-guesses">
         {Array(MAX_GUESSES).fill(null).map((_, i) => {
           const g = game.guesses[i];
-          const isEmpty = !g;
           const isCurrent = i === game.guesses.length && !gameOver;
           return (
             <div
@@ -325,7 +336,9 @@ export default function Mtgle() {
           ) : (
             <>
               <div className="mtgle-result-icon">💀</div>
-              <div className="mtgle-result-title">Better luck tomorrow!</div>
+              <div className="mtgle-result-title">
+                {isCustom ? 'Not this time!' : 'Better luck tomorrow!'}
+              </div>
               <div className="mtgle-result-sub">The card was:</div>
             </>
           )}
@@ -342,10 +355,20 @@ export default function Mtgle() {
             </div>
           </div>
 
-          <button className="btn-secondary mtgle-share-btn" onClick={handleCopy}>
-            {copied ? '✓ Copied!' : '📋 Share Result'}
-          </button>
-          <p className="mtgle-comeback">Come back tomorrow for puzzle #{puzzleNum + 1}!</p>
+          {isCustom ? (
+            <div className="mtgle-custom-actions">
+              {onNewGame && (
+                <button className="btn-primary" onClick={onNewGame}>🔄 New Custom Game</button>
+              )}
+            </div>
+          ) : (
+            <>
+              <button className="btn-secondary mtgle-share-btn" onClick={handleCopy}>
+                {copied ? '✓ Copied!' : '📋 Share Result'}
+              </button>
+              <p className="mtgle-comeback">Come back tomorrow for puzzle #{puzzleNum + 1}!</p>
+            </>
+          )}
         </div>
       )}
     </div>

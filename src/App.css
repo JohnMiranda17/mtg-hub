@@ -783,6 +783,32 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .mtgle-reveal-set { color: var(--text-dim); font-size: .75rem; }
 .mtgle-share-btn { min-width: 160px; }
 .mtgle-comeback { color: var(--text-dim); font-size: .78rem; }
+.mtgle-custom-badge { background: rgba(224,123,57,.18); border: 1px solid #e07b39; border-radius: 4px; color: #e07b39; font-size: .72rem; font-weight: 700; padding: .15rem .5rem; }
+.mtgle-custom-actions { display: flex; gap: .75rem; justify-content: center; margin-top: 1rem; }
+
+/* ── MTGLE page header layout ─────────────────────────────────────────────── */
+.page-header-row { align-items: flex-start; display: flex; gap: 1rem; justify-content: space-between; flex-wrap: wrap; }
+.mtgle-custom-link { align-self: center; background: rgba(224,123,57,.1); border: 1px solid #e07b39; border-radius: 6px; color: #e07b39; font-size: .82rem; font-weight: 600; padding: .4rem .85rem; text-decoration: none; transition: background .15s; white-space: nowrap; }
+.mtgle-custom-link:hover { background: rgba(224,123,57,.22); }
+
+/* ── Custom MTGLE builder ─────────────────────────────────────────────────── */
+.custom-mtgle-builder { max-width: 640px; }
+.custom-mtgle-intro { color: var(--text-dim); font-size: .87rem; line-height: 1.6; margin-bottom: 1.5rem; }
+.filter-section { margin-bottom: 1.25rem; }
+.filter-section-label { color: var(--gold); font-size: .7rem; font-weight: 700; letter-spacing: .08em; margin-bottom: .5rem; text-transform: uppercase; }
+.filter-optional { color: var(--text-dim); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: .75em; }
+.filter-pills { display: flex; flex-wrap: wrap; gap: .4rem; }
+.filter-pill { background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; color: var(--text-dim); cursor: pointer; font-size: .8rem; padding: .3rem .75rem; transition: all .15s; }
+.filter-pill:hover { border-color: var(--gold-dim); color: var(--text); }
+.filter-pill-active { background: rgba(201,168,76,.15); border-color: var(--gold); color: var(--gold) !important; font-weight: 600; }
+.filter-set-input { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: .87rem; margin-top: .25rem; padding: .45rem .7rem; width: 100%; box-sizing: border-box; }
+.filter-set-input:focus { border-color: var(--gold-dim); outline: none; }
+.filter-set-hint { color: var(--text-dim); font-size: .75rem; margin-top: .35rem; }
+.filter-set-hint a { color: var(--gold-dim); }
+.filter-set-hint a:hover { color: var(--gold); }
+.custom-mtgle-error { background: rgba(200,60,60,.1); border: 1px solid rgba(200,60,60,.4); border-radius: 6px; color: #e07070; font-size: .84rem; margin-bottom: .75rem; padding: .55rem .85rem; }
+.custom-mtgle-submit { margin-top: .5rem; }
+
 .hint-mana { display: inline-flex; flex-wrap: wrap; gap: 2px; }
 .mana-pip { align-items: center; border-radius: 50%; display: inline-flex; font-size: .7rem; font-weight: 700; height: 18px; justify-content: center; width: 18px; }
 .mana-w { background: #f9f1d3; color: #333; }
