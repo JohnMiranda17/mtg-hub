@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, beforeEach, afterEach, describe, test, expect } from 'vitest';
-import Mtgle, { simplifyTypeLine, extractSubtypes, shuffledIndices } from '../components/Mtgle';
+import Mtgle, { simplifyTypeLine, extractSubtypes, shuffledIndices, buildShareText } from '../components/Mtgle';
 
 const MOCK_CARD = {
   name: 'Lightning Bolt',
@@ -146,6 +146,34 @@ describe('extractSubtypes', () => {
 
   test('handles kindred supertype', () => {
     expect(extractSubtypes('Kindred Sorcery — Shapeshifter')).toBe('Kindred, Shapeshifter');
+  });
+});
+
+describe('buildShareText', () => {
+  const MTGLE_URL = 'https://JohnMiranda17.github.io/mtg-hub/mtgle';
+
+  test('contains the full MTGLE direct link', () => {
+    const text = buildShareText([{ text: 'Wrong', correct: false }], false, 42);
+    expect(text).toContain(MTGLE_URL);
+  });
+
+  test('shows puzzle number and guess count on win', () => {
+    const text = buildShareText([{ text: 'Sol Ring', correct: true }], true, 5);
+    expect(text).toContain('MTGLE #5');
+    expect(text).toContain('1/7');
+    expect(text).toContain('✅');
+  });
+
+  test('shows X/7 on loss', () => {
+    const guesses = Array(7).fill(null).map(() => ({ text: 'Wrong', correct: false }));
+    const text = buildShareText(guesses, false, 10);
+    expect(text).toContain('X/7');
+    expect(text).not.toContain('✅');
+  });
+
+  test('unfilled slots show as black squares', () => {
+    const text = buildShareText([{ text: 'Sol Ring', correct: true }], true, 1);
+    expect(text).toContain('⬛');
   });
 });
 

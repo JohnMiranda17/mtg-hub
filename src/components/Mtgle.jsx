@@ -138,13 +138,13 @@ function ManaCost({ cost }) {
 }
 
 /* ── Share text ───────────────────────────────────────────────────────────── */
-function buildShareText(guesses, won, puzzleNum) {
+export function buildShareText(guesses, won, puzzleNum) {
   const result = won ? guesses.length : 'X';
   const squares = Array(MAX_GUESSES).fill('⬛');
   for (let i = 0; i < guesses.length; i++) {
     squares[i] = guesses[i].correct ? '✅' : '❌';
   }
-  return `MTGLE #${puzzleNum} ${result}/${MAX_GUESSES}\n${squares.join('')}\nmtg-hub.github.io`;
+  return `MTGLE #${puzzleNum} ${result}/${MAX_GUESSES}\n${squares.join('')}\nhttps://JohnMiranda17.github.io/mtg-hub/mtgle`;
 }
 
 /* ── Main MTGLE component ─────────────────────────────────────────────────── */
