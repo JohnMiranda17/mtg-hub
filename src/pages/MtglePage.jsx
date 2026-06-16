@@ -1,7 +1,16 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Mtgle from '../components/Mtgle';
+import NoHintMtgle from '../components/NoHintMtgle';
+
+const MODES = [
+  { id: 'daily',   label: '🎮 Daily'    },
+  { id: 'no-hint', label: '🧠 No-Hint'  },
+];
 
 export default function MtglePage() {
+  const [mode, setMode] = useState('daily');
+
   return (
     <div className="page-wrap">
       <div className="page-header" style={{ '--page-color': '#e07b39' }}>
@@ -13,7 +22,21 @@ export default function MtglePage() {
           <Link to="/custom-mtgle" className="mtgle-custom-link">⚙️ Custom Game</Link>
         </div>
       </div>
-      <Mtgle />
+
+      <nav className="sub-tab-bar">
+        {MODES.map(m => (
+          <button
+            key={m.id}
+            className={`sub-tab${mode === m.id ? ' sub-tab-active' : ''}`}
+            onClick={() => setMode(m.id)}
+          >
+            {m.label}
+          </button>
+        ))}
+      </nav>
+
+      {mode === 'daily'   && <Mtgle />}
+      {mode === 'no-hint' && <NoHintMtgle />}
     </div>
   );
 }
