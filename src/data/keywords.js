@@ -140,7 +140,7 @@ export const keywords = [
     reminder:
       "This permanent can't be destroyed by damage or by effects that say 'destroy.'",
     description:
-      "Indestructible permanents can't be destroyed. Effects that say 'destroy target creature' fail, and even lethal damage doesn't kill them (damage is marked but the creature doesn't die from it). However, indestructible creatures CAN be exiled, returned to hand, or have their toughness reduced to 0 — those bypass indestructible.",
+      "Indestructible permanents can't be destroyed. Effects that say 'destroy target creature' fail, and even lethal damage doesn't kill them (damage is marked but the creature doesn't die from it). However, indestructible creatures CAN be beaten through other means: exile effects (Path to Exile, Swords to Plowshares) remove them permanently; -X/-X effects (Toxic Deluge, Mutilate) that reduce toughness to 0 kill them; bounce effects (Unsummon) return them to hand; and critically, sacrifice effects bypass indestructible entirely — a player or effect that forces a creature to be sacrificed completely ignores indestructible.",
   },
   {
     name: "Protection",
