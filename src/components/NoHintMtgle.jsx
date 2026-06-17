@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getCardOldestPrinting, getCheapestPrintingPrice, formatPrice } from '../utils/scryfall';
+import { getCardOldestPrinting, getCheapestPrintingPrice } from '../utils/scryfall';
 import { MTGLE_POOL } from '../data/mtglePool';
 import { simplifyTypeLine, shuffledIndices } from './Mtgle';
 import CardSearchInput from './CardSearchInput';
@@ -60,12 +60,20 @@ export function compareCards(guessCard, targetCard) {
   const targetTypes = simplifyTypeLine(targetCard.type_line).split(' ');
   const typeMatch   = guessTypes.some(t => targetTypes.includes(t));
 
+  const gLetter = (guessCard.name[0] ?? 'A').toUpperCase();
+  const tLetter = (targetCard.name[0] ?? 'A').toUpperCase();
+  const gLetterIdx = gLetter.charCodeAt(0) - 65;
+  const tLetterIdx = tLetter.charCodeAt(0) - 65;
+  const letterResult = tLetterIdx > gLetterIdx ? 'higher' : tLetterIdx < gLetterIdx ? 'lower' : 'exact';
+
   return {
-    name:   guessCard.name,
-    cmc:    { result: cmc,                         value: gCmc },
-    colors: { result: colorResult,                 value: gc.length === 0 ? 'Colorless' : gc.join('') },
-    type:   { result: typeMatch ? 'match' : 'miss', value: simplifyTypeLine(guessCard.type_line) },
-    rarity: { result: guessCard.rarity === targetCard.rarity ? 'match' : 'miss', value: guessCard.rarity },
+    name:        guessCard.name,
+    cmc:         { result: cmc,                          value: gCmc },
+    colors:      { result: colorResult,                  value: gc.length === 0 ? 'Colorless' : gc.join('') },
+    type:        { result: typeMatch ? 'match' : 'miss', value: simplifyTypeLine(guessCard.type_line) },
+    rarity:      { result: guessCard.rarity === targetCard.rarity ? 'match' : 'miss', value: guessCard.rarity },
+    firstLetter: { result: letterResult,                 value: gLetter },
+    // guessPrice: not set here — filled in async by handleGuess
     isCorrect: guessCard.name.toLowerCase() === targetCard.name.toLowerCase(),
   };
 }
@@ -117,14 +125,52 @@ function AttrCell({ result, value }) {
   );
 }
 
-function GuessRow({ comparison }) {
+function LetterCell({ firstLetter }) {
+  const { result, value } = firstLetter;
+  const icon  = result === 'exact' ? '✅' : result === 'higher' ? '↑' : '↓';
+  const cls   = result === 'exact' ? 'nh-cell-match' : 'nh-cell-dir';
+  const title = result === 'exact' ? 'Same starting letter!'
+    : result === 'higher' ? 'Target starts later in alphabet'
+    : 'Target starts earlier in alphabet';
+  return (
+    <div className={`nh-cell nh-cell-letter ${cls}`} title={title}>
+      <span className="nh-cell-icon">{icon}</span>
+      <span className="nh-cell-val">{value}</span>
+    </div>
+  );
+}
+
+function PriceCell({ guessPrice, targetPrice }) {
+  if (guessPrice === undefined) {
+    return <div className="nh-cell nh-cell-price nh-cell-loading">…</div>;
+  }
+  if (guessPrice === null || targetPrice == null) {
+    return <div className="nh-cell nh-cell-price nh-cell-miss">—</div>;
+  }
+  const exact = Math.abs(targetPrice - guessPrice) < 0.005;
+  const icon  = exact ? '✅' : targetPrice > guessPrice ? '↑' : '↓';
+  const cls   = exact ? 'nh-cell-match' : 'nh-cell-dir';
+  const title = exact ? 'Same price range'
+    : icon === '↑' ? 'Target is more expensive'
+    : 'Target is cheaper';
+  return (
+    <div className={`nh-cell nh-cell-price ${cls}`} title={title}>
+      <span className="nh-cell-icon">{icon}</span>
+      <span className="nh-cell-val">${guessPrice.toFixed(2)}</span>
+    </div>
+  );
+}
+
+function GuessRow({ comparison, targetPrice }) {
   return (
     <div className={`nh-row${comparison.isCorrect ? ' nh-row-correct' : ''}`}>
       <div className="nh-cell nh-cell-name" title={comparison.name}>{comparison.name}</div>
-      <CmcCell  cmc={comparison.cmc} />
+      <CmcCell    cmc={comparison.cmc} />
       <ColorsCell colors={comparison.colors} />
-      <AttrCell result={comparison.type.result}   value={comparison.type.value} />
-      <AttrCell result={comparison.rarity.result} value={RARITY_ABBR[comparison.rarity.value] ?? comparison.rarity.value} />
+      <AttrCell   result={comparison.type.result}   value={comparison.type.value} />
+      <AttrCell   result={comparison.rarity.result} value={RARITY_ABBR[comparison.rarity.value] ?? comparison.rarity.value} />
+      <LetterCell firstLetter={comparison.firstLetter} />
+      <PriceCell  guessPrice={comparison.guessPrice} targetPrice={targetPrice} />
     </div>
   );
 }
@@ -137,6 +183,8 @@ function TableHeader() {
       <div className="nh-cell nh-cell-colors-result">Colors</div>
       <div className="nh-cell nh-cell-attr">Type</div>
       <div className="nh-cell nh-cell-attr">Rarity</div>
+      <div className="nh-cell nh-cell-letter">Letter</div>
+      <div className="nh-cell nh-cell-price">Price</div>
     </div>
   );
 }
@@ -207,6 +255,34 @@ export default function NoHintMtgle({ overrideCard, onNewGame } = {}) {
     if (!overrideCard) saveNhGame(updated);
     setGuess('');
     guessRef.current = '';
+
+    // Fetch price for the guessed card non-blocking; update that row when ready
+    if (!won) {
+      const guessedName = guessCard.name;
+      getCheapestPrintingPrice(guessCard)
+        .then(price => {
+          setGame(prev => {
+            const updatedGuesses = [...prev.guesses];
+            const idx = updatedGuesses.reduce((found, g, i) => g.name === guessedName ? i : found, -1);
+            if (idx === -1) return prev;
+            updatedGuesses[idx] = { ...updatedGuesses[idx], guessPrice: price ?? null };
+            const withPrice = { ...prev, guesses: updatedGuesses };
+            if (!overrideCard) saveNhGame(withPrice);
+            return withPrice;
+          });
+        })
+        .catch(() => {
+          setGame(prev => {
+            const updatedGuesses = [...prev.guesses];
+            const idx = updatedGuesses.reduce((found, g, i) => g.name === guessedName ? i : found, -1);
+            if (idx === -1) return prev;
+            updatedGuesses[idx] = { ...updatedGuesses[idx], guessPrice: null };
+            const withPrice = { ...prev, guesses: updatedGuesses };
+            if (!overrideCard) saveNhGame(withPrice);
+            return withPrice;
+          });
+        });
+    }
   }
 
   if (loadError) return <div className="mtgle-error"><p>{loadError}</p></div>;
@@ -230,15 +306,12 @@ export default function NoHintMtgle({ overrideCard, onNewGame } = {}) {
           Guess any card — each guess reveals how its attributes compare to the target.
           Green = match · Red = miss · ↑↓ = CMC direction
         </p>
-        {cheapestPrice != null && (
-          <p className="nh-price-hint">💰 Cheapest printing: {formatPrice(cheapestPrice)}</p>
-        )}
       </div>
 
       {game.guesses.length > 0 && (
         <div className="nh-table">
           <TableHeader />
-          {game.guesses.map((c, i) => <GuessRow key={i} comparison={c} />)}
+          {game.guesses.map((c, i) => <GuessRow key={i} comparison={c} targetPrice={cheapestPrice} />)}
         </div>
       )}
 

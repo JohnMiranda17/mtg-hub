@@ -119,6 +119,28 @@ describe('compareCards', () => {
     });
   });
 
+  describe('firstLetter comparison', () => {
+    test('exact when guessed and target start with same letter', () => {
+      // Sol Ring (S) vs Sol Ring (S)
+      const r = compareCards(SOL_RING, SOL_RING);
+      expect(r.firstLetter.result).toBe('exact');
+      expect(r.firstLetter.value).toBe('S');
+    });
+    test('higher when target letter is later in alphabet', () => {
+      // guess: Tarmogoyf (T), target: Black Lotus (B) → wait, B < T, so result is 'lower'
+      // guess: Black Lotus (B), target: Tarmogoyf (T) → T > B → higher
+      const r = compareCards(BLACK_LOTUS, TARMOGOYF);
+      expect(r.firstLetter.result).toBe('higher');
+      expect(r.firstLetter.value).toBe('B');
+    });
+    test('lower when target letter is earlier in alphabet', () => {
+      // guess: Tarmogoyf (T=19), target: Black Lotus (B=1) → B < T → lower
+      const r = compareCards(TARMOGOYF, BLACK_LOTUS);
+      expect(r.firstLetter.result).toBe('lower');
+      expect(r.firstLetter.value).toBe('T');
+    });
+  });
+
   test('isCorrect true when names match case-insensitively', () => {
     const r = compareCards(SOL_RING, { ...SOL_RING, name: 'sol ring' });
     expect(r.isCorrect).toBe(true);
@@ -222,9 +244,38 @@ describe('NoHintMtgle component', () => {
     await waitFor(() => expect(screen.getByText(/Legendary/i)).toBeInTheDocument());
   });
 
-  test('shows cheapest printing price hint', async () => {
+  test('shows Letter and Price column headers after a guess', async () => {
     await renderAndWait();
-    await waitFor(() => expect(screen.getByText(/\$0\.50/)).toBeInTheDocument());
+    const input = screen.getByPlaceholderText(/Guess any card name/i);
+    fireEvent.change(input, { target: { value: 'Black Lotus' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Guess$/ }));
+    await waitFor(() => expect(screen.getByText('Letter')).toBeInTheDocument());
+    expect(screen.getByText('Price')).toBeInTheDocument();
+  });
+
+  test('letter cell shows directional arrow after a guess', async () => {
+    // MOCK_TARGET starts with 'S' (pos 18), BLACK_LOTUS starts with 'B' (pos 1)
+    // B < S → target is higher → ↑
+    await renderAndWait();
+    const input = screen.getByPlaceholderText(/Guess any card name/i);
+    fireEvent.change(input, { target: { value: 'Black Lotus' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Guess$/ }));
+    await waitFor(() => {
+      const cells = screen.getAllByTitle(/alphabet/i);
+      expect(cells.length).toBeGreaterThan(0);
+    });
+  });
+
+  test('price cell shows comparison after price loads', async () => {
+    // target price = 0.50 (from mock); guess price also 0.50 → same → ✅
+    await renderAndWait();
+    const input = screen.getByPlaceholderText(/Guess any card name/i);
+    fireEvent.change(input, { target: { value: 'Black Lotus' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Guess$/ }));
+    await waitFor(() => {
+      // $0.50 appears in the price cell
+      expect(screen.getByText('$0.50')).toBeInTheDocument();
+    });
   });
 
   test('saves game to localStorage after a guess', async () => {
