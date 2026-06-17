@@ -1,5 +1,52 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SPOTLIGHTS, dailySpotlightIndex } from '../data/spotlights';
+
+const imgCache = new Map();
+
+function SpotlightCardImage({ name, color }) {
+  const [imgUrl, setImgUrl] = useState(imgCache.get(name) ?? null);
+  const [loading, setLoading] = useState(!imgCache.has(name));
+
+  useEffect(() => {
+    if (imgCache.has(name)) return;
+    let cancelled = false;
+    fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`)
+      .then(r => r.json())
+      .then(data => {
+        const url = data.image_uris?.normal
+          ?? data.card_faces?.[0]?.image_uris?.normal
+          ?? null;
+        imgCache.set(name, url);
+        if (!cancelled) { setImgUrl(url); setLoading(false); }
+      })
+      .catch(() => {
+        imgCache.set(name, null);
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [name]);
+
+  return (
+    <Link
+      to="/prices"
+      state={{ cardName: name }}
+      className="spotlight-card-img-wrap"
+      style={{ '--spot-color': color }}
+      title={name}
+    >
+      {loading && <div className="spotlight-card-img-placeholder"><span className="spotlight-card-img-name">{name}</span></div>}
+      {!loading && imgUrl && (
+        <img src={imgUrl} alt={name} className="spotlight-card-img" />
+      )}
+      {!loading && !imgUrl && (
+        <div className="spotlight-card-img-placeholder spotlight-card-img-fallback">
+          <span className="spotlight-card-img-name">{name}</span>
+        </div>
+      )}
+    </Link>
+  );
+}
 
 export default function Spotlight() {
   const spot = SPOTLIGHTS[dailySpotlightIndex()];
@@ -18,17 +65,9 @@ export default function Spotlight() {
 
       <p className="spotlight-desc">{spot.desc}</p>
 
-      <div className="spotlight-cards">
+      <div className="spotlight-cards-grid">
         {spot.cards.map(name => (
-          <Link
-            key={name}
-            to="/prices"
-            state={{ cardName: name }}
-            className="spotlight-card"
-            style={{ '--spot-color': spot.color }}
-          >
-            {name}
-          </Link>
+          <SpotlightCardImage key={name} name={name} color={spot.color} />
         ))}
       </div>
 

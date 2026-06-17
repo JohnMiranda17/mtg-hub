@@ -1125,3 +1125,16 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .cf-feedback-correct { background: rgba(74,201,122,.08); border: 1px solid rgba(74,201,122,.25); }
 .cf-feedback-wrong   { background: rgba(201,74,74,.08);  border: 1px solid rgba(201,74,74,.25); }
 .cf-feedback-reveal  { background: rgba(74,143,201,.08); border: 1px solid rgba(74,143,201,.25); }
+
+/* ── Spotlight card image grid ───────────────────────────────────────────── */
+.spotlight-cards-grid { display: grid; gap: .6rem; grid-template-columns: repeat(3, 1fr); margin-bottom: 1rem; }
+@media (min-width: 560px) { .spotlight-cards-grid { grid-template-columns: repeat(6, 1fr); } }
+
+.spotlight-card-img-wrap { border-radius: 8px; border: 2px solid transparent; display: block; overflow: hidden; text-decoration: none; transition: border-color .15s, transform .15s, box-shadow .15s; }
+.spotlight-card-img-wrap:hover { border-color: var(--spot-color, var(--gold)); box-shadow: 0 4px 16px rgba(0,0,0,.5); transform: translateY(-3px) scale(1.03); z-index: 2; position: relative; }
+
+.spotlight-card-img { border-radius: 6px; display: block; height: auto; width: 100%; }
+
+.spotlight-card-img-placeholder { aspect-ratio: 63 / 88; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: .4rem; }
+.spotlight-card-img-fallback { background: var(--bg3); }
+.spotlight-card-img-name { color: var(--text-dim); font-size: .65rem; line-height: 1.3; text-align: center; word-break: break-word; }
