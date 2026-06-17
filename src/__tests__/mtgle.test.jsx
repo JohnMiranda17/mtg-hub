@@ -1,5 +1,13 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, beforeEach, afterEach, describe, test, expect } from 'vitest';
+
+// Mock scryfall to avoid sfetch cache and use oldest-printing format
+vi.mock('../utils/scryfall', async (importOriginal) => {
+  const original = await importOriginal();
+  return { ...original, getCardOldestPrinting: vi.fn() };
+});
+
+import { getCardOldestPrinting } from '../utils/scryfall';
 import Mtgle, { simplifyTypeLine, extractSubtypes, shuffledIndices, buildShareText } from '../components/Mtgle';
 
 const MOCK_CARD = {
@@ -18,12 +26,9 @@ const MOCK_CARD = {
 
 beforeEach(() => {
   localStorage.clear();
-  global.fetch = vi.fn(() =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve(MOCK_CARD),
-    })
-  );
+  getCardOldestPrinting.mockResolvedValue(MOCK_CARD);
+  // Guess lookup goes through global.fetch (getCardByName is NOT mocked)
+  // but Mtgle.jsx doesn't use getCardByName for guesses — they are string compares.
 });
 
 afterEach(() => {

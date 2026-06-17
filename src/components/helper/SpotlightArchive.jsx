@@ -3,9 +3,11 @@ import { SPOTLIGHTS, dailySpotlightIndex } from '../../data/spotlights';
 
 // Returns expired spotlights ordered most-recently-expired first.
 // Today's spotlight is still live on the Hub, so it is excluded.
-export function expiredSpotlights(todayIdx = dailySpotlightIndex()) {
+// Cap at 28 days so the archive doesn't show 99 entries with a 100-theme pool
+export function expiredSpotlights(todayIdx = dailySpotlightIndex(), limit = 28) {
   const n = SPOTLIGHTS.length;
-  return Array.from({ length: n - 1 }, (_, i) => ({
+  const count = Math.min(n - 1, limit);
+  return Array.from({ length: count }, (_, i) => ({
     spot: SPOTLIGHTS[(todayIdx - (i + 1) + n) % n],
     daysAgo: i + 1,
   }));

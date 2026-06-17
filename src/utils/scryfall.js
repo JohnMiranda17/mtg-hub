@@ -22,6 +22,15 @@ export async function getCardByName(name) {
   return sfetch(`${BASE}/cards/named?fuzzy=${encodeURIComponent(name)}`);
 }
 
+// Returns the oldest English printing so set name / rarity reflect original release.
+export async function getCardOldestPrinting(name) {
+  const q = `!"${name}" lang:en`;
+  const url = `${BASE}/cards/search?q=${encodeURIComponent(q)}&order=released&dir=asc&unique=prints`;
+  const data = await sfetch(url);
+  if (!data.data?.length) throw new Error(`No printings found: ${name}`);
+  return data.data[0];
+}
+
 export async function getCardById(id) {
   return sfetch(`${BASE}/cards/${id}`);
 }

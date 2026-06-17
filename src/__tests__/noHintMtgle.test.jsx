@@ -1,13 +1,13 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, beforeEach, afterEach, describe, test, expect } from 'vitest';
 
-// Mock getCardByName to avoid the module-level sfetch cache interfering between tests
+// Mock getCardOldestPrinting to avoid the module-level sfetch cache interfering between tests
 vi.mock('../utils/scryfall', async (importOriginal) => {
   const original = await importOriginal();
-  return { ...original, getCardByName: vi.fn() };
+  return { ...original, getCardOldestPrinting: vi.fn() };
 });
 
-import { getCardByName } from '../utils/scryfall';
+import { getCardOldestPrinting } from '../utils/scryfall';
 import NoHintMtgle, { compareCards, getCardColors, getScoreTier } from '../components/NoHintMtgle';
 
 // ── Pure-function unit tests ──────────────────────────────────────────────────
@@ -66,26 +66,30 @@ describe('compareCards', () => {
   });
 
   describe('color comparison', () => {
-    test('colorless pip matches when both cards are colorless', () => {
-      const r = compareCards(SOL_RING, BLACK_LOTUS);
-      expect(r.colors['C']).toBe('match');
+    test('exact when both are colorless', () => {
+      const r = compareCards(SOL_RING, BLACK_LOTUS); // both []
+      expect(r.colors.result).toBe('exact');
+      expect(r.colors.value).toBe('Colorless');
     });
-    test('colorless pip misses when guess is colorless but target is not', () => {
+    test('exact when both share the same color', () => {
+      const r = compareCards(LIGHTNING_BOLT, LIGHTNING_BOLT); // both ['R']
+      expect(r.colors.result).toBe('exact');
+    });
+    test('partial-more when guess has fewer colors than target', () => {
+      // guess: colorless (0 colors), target: Lightning Bolt (1 color)
       const r = compareCards(SOL_RING, LIGHTNING_BOLT);
-      expect(r.colors['C']).toBe('miss');
+      expect(r.colors.result).toBe('partial-more');
     });
-    test('red pip matches when both have red', () => {
-      const r = compareCards(LIGHTNING_BOLT, LIGHTNING_BOLT);
-      expect(r.colors['R']).toBe('match');
-    });
-    test('red pip misses when only guess has red', () => {
+    test('partial-fewer when guess has more colors than target', () => {
+      // guess: Lightning Bolt (1 color), target: colorless (0 colors)
       const r = compareCards(LIGHTNING_BOLT, SOL_RING);
-      expect(r.colors['R']).toBe('miss');
+      expect(r.colors.result).toBe('partial-fewer');
     });
-    test('unshared color pip matches when neither card has it', () => {
-      // Neither Sol Ring nor Black Lotus have White
-      const r = compareCards(SOL_RING, BLACK_LOTUS);
-      expect(r.colors['W']).toBe('match');
+    test('miss when same count but different colors', () => {
+      const GREEN_CARD = { ...TARMOGOYF, colors: ['G'] };
+      // guess: R, target: G — both 1 color but different
+      const r = compareCards(LIGHTNING_BOLT, GREEN_CARD);
+      expect(r.colors.result).toBe('miss');
     });
   });
 
@@ -155,7 +159,7 @@ const MOCK_TARGET = {
 beforeEach(() => {
   localStorage.clear();
   // daily card load → MOCK_TARGET; guessed card fetches → BLACK_LOTUS
-  getCardByName
+  getCardOldestPrinting
     .mockResolvedValueOnce(MOCK_TARGET)
     .mockResolvedValue(BLACK_LOTUS);
 });
@@ -205,7 +209,7 @@ describe('NoHintMtgle component', () => {
   });
 
   test('correct guess shows win with score tier', async () => {
-    getCardByName
+    getCardOldestPrinting
       .mockReset()
       .mockResolvedValueOnce(MOCK_TARGET)   // daily card
       .mockResolvedValue(MOCK_TARGET);      // guessed card = correct answer

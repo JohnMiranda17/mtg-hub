@@ -17,7 +17,7 @@ export default function MtglePage() {
         <div className="page-header-row">
           <div>
             <h1>🎮 MTGLE</h1>
-            <p>A new Magic card puzzle every day. Guess the card from hints — you get 7 tries.</p>
+            <p>A new Magic card puzzle every day — two ways to play. Daily mode gives hints with 7 tries; No-Hint mode compares card attributes across 10 guesses.</p>
           </div>
           <Link to="/custom-mtgle" className="mtgle-custom-link">⚙️ Custom Game</Link>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getCardByName } from '../utils/scryfall';
+import { getCardOldestPrinting } from '../utils/scryfall';
 import { MTGLE_POOL } from '../data/mtglePool';
 import CardSearchInput from './CardSearchInput';
 
@@ -168,7 +168,7 @@ export default function Mtgle({ overrideCard = null, onNewGame = null }) {
       return;
     }
     const name = dailyCardName();
-    getCardByName(name)
+    getCardOldestPrinting(name)
       .then(c => {
         setCard(c);
         const existing = loadGame();

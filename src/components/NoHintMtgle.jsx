@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getCardByName } from '../utils/scryfall';
+import { getCardOldestPrinting } from '../utils/scryfall';
 import { MTGLE_POOL } from '../data/mtglePool';
 import { simplifyTypeLine, shuffledIndices } from './Mtgle';
 import CardSearchInput from './CardSearchInput';
@@ -16,17 +16,6 @@ function dailyCardName() { return MTGLE_POOL[POOL_ORDER[dayNumber() % POOL_ORDER
 /* ── Constants ────────────────────────────────────────────────────────────── */
 const MAX_GUESSES = 10;
 const NH_GAME_KEY = 'mtg-hub:mtgle-nh-game';
-
-const ALL_COLORS = ['W', 'U', 'B', 'R', 'G', 'C'];
-
-const COLOR_META = {
-  W: { label: 'White',     cls: 'mana-w' },
-  U: { label: 'Blue',      cls: 'mana-u' },
-  B: { label: 'Black',     cls: 'mana-b' },
-  R: { label: 'Red',       cls: 'mana-r' },
-  G: { label: 'Green',     cls: 'mana-g' },
-  C: { label: 'Colorless', cls: 'mana-c' },
-};
 
 const RARITY_ABBR = { common: 'C', uncommon: 'U', rare: 'R', mythic: 'M' };
 
@@ -48,13 +37,19 @@ export function compareCards(guessCard, targetCard) {
   const gc = getCardColors(guessCard);
   const tc = getCardColors(targetCard);
 
-  // For each of W/U/B/R/G: does the guess match the target on that color?
-  // For C (colorless): match means both have empty colors array.
-  const colors = {};
-  for (const key of ALL_COLORS) {
-    const gHas = key === 'C' ? gc.length === 0 : gc.includes(key);
-    const tHas = key === 'C' ? tc.length === 0 : tc.includes(key);
-    colors[key] = gHas === tHas ? 'match' : 'miss';
+  // Color comparison: exact match, partial (wrong count), or miss (same count, different colors)
+  const exactColors = gc.length === tc.length &&
+    gc.every(c => tc.includes(c)) &&
+    tc.every(c => gc.includes(c));
+  let colorResult;
+  if (exactColors) {
+    colorResult = 'exact';
+  } else if (gc.length < tc.length) {
+    colorResult = 'partial-more';   // target has more colors
+  } else if (gc.length > tc.length) {
+    colorResult = 'partial-fewer';  // target has fewer colors
+  } else {
+    colorResult = 'miss';           // same count, wrong colors
   }
 
   const gCmc = guessCard.cmc ?? 0;
@@ -66,11 +61,11 @@ export function compareCards(guessCard, targetCard) {
   const typeMatch   = guessTypes.some(t => targetTypes.includes(t));
 
   return {
-    name:    guessCard.name,
-    cmc:     { result: cmc,                        value: gCmc },
-    colors,
-    type:    { result: typeMatch ? 'match' : 'miss', value: simplifyTypeLine(guessCard.type_line) },
-    rarity:  { result: guessCard.rarity === targetCard.rarity ? 'match' : 'miss', value: guessCard.rarity },
+    name:   guessCard.name,
+    cmc:    { result: cmc,                         value: gCmc },
+    colors: { result: colorResult,                 value: gc.length === 0 ? 'Colorless' : gc.join('') },
+    type:   { result: typeMatch ? 'match' : 'miss', value: simplifyTypeLine(guessCard.type_line) },
+    rarity: { result: guessCard.rarity === targetCard.rarity ? 'match' : 'miss', value: guessCard.rarity },
     isCorrect: guessCard.name.toLowerCase() === targetCard.name.toLowerCase(),
   };
 }
@@ -103,19 +98,15 @@ function CmcCell({ cmc }) {
 }
 
 function ColorsCell({ colors }) {
-  return (
-    <div className="nh-cell nh-cell-colors">
-      {ALL_COLORS.map(key => (
-        <span
-          key={key}
-          className={`nh-pip ${COLOR_META[key].cls} ${colors[key] === 'match' ? 'nh-pip-match' : 'nh-pip-miss'}`}
-          title={`${COLOR_META[key].label}: ${colors[key] === 'match' ? 'matches target' : 'differs from target'}`}
-        >
-          {key}
-        </span>
-      ))}
-    </div>
-  );
+  const { result, value } = colors;
+  const labels = {
+    'exact':         { text: `✅ ${value}`, cls: 'nh-cell-match',   title: 'Color identity matches exactly' },
+    'partial-more':  { text: '~ Partial — more colors',  cls: 'nh-cell-partial', title: 'Target has more colors' },
+    'partial-fewer': { text: '~ Partial — fewer colors', cls: 'nh-cell-partial', title: 'Target has fewer colors' },
+    'miss':          { text: `❌ ${value}`, cls: 'nh-cell-miss',    title: 'Same color count, different colors' },
+  };
+  const { text, cls, title } = labels[result] ?? labels.miss;
+  return <div className={`nh-cell nh-cell-colors-result ${cls}`} title={title}>{text}</div>;
 }
 
 function AttrCell({ result, value }) {
@@ -143,7 +134,7 @@ function TableHeader() {
     <div className="nh-row nh-header-row">
       <div className="nh-cell nh-cell-name">Card Guessed</div>
       <div className="nh-cell nh-cell-cmc">CMC</div>
-      <div className="nh-cell nh-cell-colors">W U B R G C</div>
+      <div className="nh-cell nh-cell-colors-result">Colors</div>
       <div className="nh-cell nh-cell-attr">Type</div>
       <div className="nh-cell nh-cell-attr">Rarity</div>
     </div>
@@ -161,7 +152,7 @@ export default function NoHintMtgle() {
   const guessRef = useRef('');
 
   useEffect(() => {
-    getCardByName(dailyCardName())
+    getCardOldestPrinting(dailyCardName())
       .then(card => {
         setTargetCard(card);
         const existing = loadNhGame();
@@ -184,7 +175,7 @@ export default function NoHintMtgle() {
     setFetching(true);
     let guessCard;
     try {
-      guessCard = await getCardByName(g);
+      guessCard = await getCardOldestPrinting(g);
     } catch {
       setGuessError(`"${g}" not found — check the spelling and try again.`);
       setFetching(false);
