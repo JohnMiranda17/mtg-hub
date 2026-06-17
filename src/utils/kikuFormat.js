@@ -35,12 +35,77 @@ export async function parseKiku(file) {
   const text = await file.text();
   let data;
   try { data = JSON.parse(text); } catch { throw new Error('File is not valid JSON.'); }
-  if (data.format !== KIKU_MAGIC) throw new Error('Not a .kiku game file.');
-  return {
-    name:      data.name      ?? 'MTG Game',
-    boardText: data.boardText ?? '',
-    priority:  data.priority  ?? 'me',
-    createdAt: data.createdAt ?? null,
-    version:   data.version   ?? 1,
-  };
+
+  // Native mtg-hub board state format
+  if (data.format === KIKU_MAGIC) {
+    return {
+      name:      data.name      ?? 'MTG Game',
+      boardText: data.boardText ?? '',
+      priority:  data.priority  ?? 'me',
+      createdAt: data.createdAt ?? null,
+      version:   data.version   ?? 1,
+    };
+  }
+
+  // External card game tracker format (lobbyName, roomId, visitors, cards)
+  if (data.lobbyName != null && data.cards != null) {
+    return {
+      name:      data.lobbyName ?? 'MTG Game',
+      boardText: convertExternalKiku(data),
+      priority:  'me',
+      createdAt: data.createdAt ? new Date(data.createdAt).toISOString() : null,
+      version:   1,
+    };
+  }
+
+  throw new Error('Not a recognised .kiku file format.');
+}
+
+function convertExternalKiku(data) {
+  const myId = data.hostId ?? Object.keys(data.visitors ?? {})[0];
+  const myPlayer = data.visitors?.[myId];
+  const cards = Object.values(data.cards ?? {});
+
+  const myBoard   = cards.filter(c => c.zone === 'battlefield' && c.controller === myId && !c.isToken);
+  const oppBoard  = cards.filter(c => c.zone === 'battlefield' && c.controller !== myId && !c.isToken);
+  const hand      = cards.filter(c => c.zone === 'hand'      && c.originalOwner === myId);
+  const graveyard = cards.filter(c => c.zone === 'graveyard' && c.originalOwner === myId);
+  const exile     = cards.filter(c => c.zone === 'exile'     && c.originalOwner === myId);
+
+  const lines = [];
+
+  if (myBoard.length > 0) {
+    lines.push('MY BATTLEFIELD');
+    myBoard.forEach(c => lines.push(`  - ${c.name} (${c.tapped ? 'tapped' : 'untapped'})`));
+    lines.push('');
+  }
+
+  if (oppBoard.length > 0) {
+    lines.push('OPP BATTLEFIELD');
+    oppBoard.forEach(c => lines.push(`  - ${c.name} (${c.tapped ? 'tapped' : 'untapped'})`));
+    lines.push('');
+  }
+
+  if (hand.length > 0) {
+    lines.push('MY HAND');
+    hand.forEach(c => lines.push(`  - ${c.name}`));
+    lines.push('');
+  }
+
+  if (graveyard.length > 0) {
+    lines.push('MY GRAVEYARD');
+    graveyard.forEach(c => lines.push(`  - ${c.name}`));
+    lines.push('');
+  }
+
+  if (exile.length > 0) {
+    lines.push('EXILE');
+    exile.forEach(c => lines.push(`  - ${c.name}`));
+    lines.push('');
+  }
+
+  const myLife = myPlayer?.life;
+  if (myLife != null) lines.push(`ACTIONS THIS TURN\n  - Life total: ${myLife}`);
+
+  return lines.join('\n').trim();
 }

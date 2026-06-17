@@ -1,0 +1,10 @@
+project_id = "fmbcptlhggwitfixbjso"
+
+[api]
+enabled = true
+port = 54321
+
+[auth]
+enabled = true
+
+[functions]

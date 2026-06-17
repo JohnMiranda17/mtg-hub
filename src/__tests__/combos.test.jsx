@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi, beforeEach, afterEach } from 'vitest';
 import Combos from '../pages/Combos';
+import { dailyTopCombo } from '../data/topCombos';
 
 beforeEach(() => {
   global.fetch = vi.fn(() =>
@@ -55,12 +56,12 @@ describe('Combos page', () => {
 
   test('renders all combo type cards', () => {
     renderCombos();
-    expect(screen.getByText(/Infinite Mana/)).toBeInTheDocument();
-    expect(screen.getByText(/Instant Win/)).toBeInTheDocument();
-    expect(screen.getByText(/Infinite Tokens/)).toBeInTheDocument();
-    expect(screen.getByText(/Infinite Damage/)).toBeInTheDocument();
-    expect(screen.getByText(/Infinite Turns/)).toBeInTheDocument();
-    expect(screen.getByText(/Infinite Draw/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Infinite Mana/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Instant Win/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Infinite Tokens/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Infinite Damage/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Infinite Turns/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Infinite Draw/).length).toBeGreaterThan(0);
   });
 
   test('expanding a combo type shows how to stop it', () => {
@@ -72,43 +73,32 @@ describe('Combos page', () => {
     expect(screen.getAllByText(/How to stop it/i).length).toBeGreaterThan(0);
   });
 
-  test('renders the featured combos section', () => {
+  test("renders today's featured combo section on search tab", () => {
     renderCombos();
-    expect(screen.getByText(/Featured Commander Combos/i)).toBeInTheDocument();
+    expect(screen.getByText(/Today's Featured Combo/i)).toBeInTheDocument();
   });
 
-  test('featured combos are collapsed by default (show-button visible)', () => {
+  test("daily featured combo card is visible by default", () => {
     renderCombos();
-    expect(screen.getByText(/Show.*featured combos/i)).toBeInTheDocument();
+    const daily = dailyTopCombo();
+    expect(screen.getAllByText(new RegExp(daily.type, 'i')).length).toBeGreaterThan(0);
   });
 
-  test('clicking show featured combos reveals Isochron Scepter combo', () => {
+  test("expanding the daily featured combo shows prerequisites", () => {
     renderCombos();
-    fireEvent.click(screen.getByText(/Show.*featured combos/i));
-    expect(screen.getAllByText(/Isochron Scepter/).length).toBeGreaterThan(0);
-  });
-
-  test('featured combo header toggle also reveals combos', () => {
-    renderCombos();
-    fireEvent.click(screen.getByText(/Featured Commander Combos/i));
-    expect(screen.getAllByText(/Dramatic Reversal/).length).toBeGreaterThan(0);
-  });
-
-  test('expanding a featured combo shows prerequisites', () => {
-    renderCombos();
-    fireEvent.click(screen.getByText(/Featured Commander Combos/i));
-    const comboHeaders = screen.getAllByRole('button').filter(b =>
-      b.textContent.includes('Isochron Scepter')
+    const daily = dailyTopCombo();
+    const chip = screen.getAllByRole('button').find(b =>
+      b.textContent.includes(daily.cards[0])
     );
-    expect(comboHeaders.length).toBeGreaterThan(0);
-    fireEvent.click(comboHeaders[0]);
+    expect(chip).toBeDefined();
+    fireEvent.click(chip);
     expect(screen.getAllByText(/Prerequisites/i).length).toBeGreaterThan(0);
   });
 
-  test('switching to Top Combos tab shows combo list', () => {
+  test('switching to Top Combos tab shows type filter buttons', () => {
     renderCombos();
     fireEvent.click(screen.getByRole('button', { name: /Top Combos/i }));
-    expect(screen.getByText(/Today.*Featured Combo/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^All$/ })).toBeInTheDocument();
   });
 
   test('Top Combos tab shows type filter buttons', () => {

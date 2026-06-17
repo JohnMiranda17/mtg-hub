@@ -125,7 +125,7 @@ describe('parseKiku', () => {
   // error should be thrown so the UI can show a clear message.
   test('throws when format magic is wrong', async () => {
     const file = makeFile({ format: 'not-kiku', boardText: '' });
-    await expect(parseKiku(file)).rejects.toThrow('Not a .kiku game file.');
+    await expect(parseKiku(file)).rejects.toThrow('Not a recognised .kiku file format.');
   });
 
   // If the file contains malformed JSON, JSON.parse will throw. parseKiku must

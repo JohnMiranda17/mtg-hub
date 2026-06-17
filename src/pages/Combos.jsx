@@ -247,7 +247,7 @@ function SearchTab() {
   const [corsBlocked, setCorsBlocked] = useState(false);
   const [lastQuery, setLastQuery]     = useState('');
   const [filter, setFilter]   = useState('all');
-  const [featuredOpen, setFeaturedOpen] = useState(false);
+  const daily = dailyTopCombo();
 
   async function search(name) {
     const n = name ?? query;
@@ -352,24 +352,15 @@ function SearchTab() {
         </div>
       </div>
 
-      {/* Featured combos (collapsed by default) */}
+      {/* Today's featured combo */}
       <div className="combo-info-section">
-        <div className="combo-featured-header" onClick={() => setFeaturedOpen(o => !o)}>
-          <h3 className="subsection-title" style={{ margin: 0 }}>⭐ Featured Commander Combos</h3>
-          <span className="combo-expand-icon">{featuredOpen ? '▲' : '▼'}</span>
+        <h3 className="subsection-title" style={{ marginTop: combos !== null ? '2rem' : '0.5rem' }}>
+          ⭐ Today's Featured Combo
+        </h3>
+        <p className="section-intro">Rotates daily. Hover card names to preview.</p>
+        <div className="combo-list" style={{ marginTop: '0.75rem' }}>
+          <TopComboCard combo={daily} />
         </div>
-        <p className="section-intro" style={{ marginTop: '0.4rem' }}>
-          Classic examples. Hover card names to preview them.
-        </p>
-        {featuredOpen ? (
-          <div className="combo-list" style={{ marginTop: '0.75rem' }}>
-            {TOP_COMBOS.slice(0, 6).map(c => <TopComboCard key={c.id} combo={c} />)}
-          </div>
-        ) : (
-          <button className="combo-show-featured-btn" onClick={() => setFeaturedOpen(true)}>
-            Show featured combos ▼
-          </button>
-        )}
       </div>
     </>
   );
@@ -379,9 +370,7 @@ function SearchTab() {
 const ALL_TYPES = ['All', ...new Set(TOP_COMBOS.map(c => c.type))];
 
 function TopCombosTab() {
-  const daily = dailyTopCombo();
   const [typeFilter, setTypeFilter] = useState('All');
-  const [showDaily, setShowDaily] = useState(true);
 
   const filtered = typeFilter === 'All'
     ? TOP_COMBOS
@@ -389,20 +378,6 @@ function TopCombosTab() {
 
   return (
     <>
-      {/* Daily featured */}
-      {showDaily && (
-        <div className="tc-daily">
-          <div className="tc-daily-header">
-            <div>
-              <div className="tc-daily-eyebrow">⭐ Today's Featured Combo</div>
-              <div className="tc-daily-title">{daily.cards.join(' + ')}</div>
-            </div>
-            <button className="btn-ghost-sm" onClick={() => setShowDaily(false)}>✕</button>
-          </div>
-          <TopComboCard combo={daily} />
-        </div>
-      )}
-
       {/* Type filter */}
       <div className="tc-filter-row">
         {ALL_TYPES.map(t => (
