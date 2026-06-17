@@ -260,6 +260,42 @@ describe('GameWinner component', () => {
     expect(chip.classList.contains('cf-card-selected')).toBe(false);
   });
 
+  test('flavor hint is hidden behind Show Hint button by default', () => {
+    renderGameWinner();
+    const puzzle = dailyGamePuzzle();
+    if (!puzzle.flavor) return;
+    expect(screen.queryByText(new RegExp(puzzle.flavor))).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /show hint/i })).toBeInTheDocument();
+  });
+
+  test('clicking Show Hint reveals the flavor text', () => {
+    renderGameWinner();
+    const puzzle = dailyGamePuzzle();
+    if (!puzzle.flavor) return;
+    fireEvent.click(screen.getByRole('button', { name: /show hint/i }));
+    expect(screen.getByText(new RegExp(puzzle.flavor))).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /show hint/i })).not.toBeInTheDocument();
+  });
+
+  test('Reset hides the hint again', () => {
+    renderGameWinner();
+    const puzzle = dailyGamePuzzle();
+    if (!puzzle.flavor) return;
+    fireEvent.click(screen.getByRole('button', { name: /show hint/i }));
+    fireEvent.click(screen.getByRole('button', { name: /reset/i }));
+    expect(screen.queryByText(new RegExp(puzzle.flavor))).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /show hint/i })).toBeInTheDocument();
+  });
+
+  test('navigating to next puzzle hides the hint', () => {
+    renderGameWinner();
+    const puzzle = dailyGamePuzzle();
+    if (!puzzle.flavor) return;
+    fireEvent.click(screen.getByRole('button', { name: /show hint/i }));
+    fireEvent.click(screen.getByTitle(/next puzzle/i));
+    expect(screen.queryByText(new RegExp(puzzle.flavor))).not.toBeInTheDocument();
+  });
+
   test('Next puzzle button advances to the next puzzle', () => {
     renderGameWinner();
     const before = screen.getByText(new RegExp(`Puzzle \\d+/${GAME_WINNER_PUZZLES.length}`)).textContent;

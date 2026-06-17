@@ -70,6 +70,7 @@ export default function GameWinner() {
   const [method, setMethod] = useState('');
   const [feedback, setFeedback] = useState(null); // null | 'correct' | { cardsOk, methodOk }
   const [revealed, setRevealed] = useState(false);
+  const [hintRevealed, setHintRevealed] = useState(false);
 
   function toggleCard(name) {
     setSelected(s => {
@@ -85,6 +86,7 @@ export default function GameWinner() {
     setMethod('');
     setFeedback(null);
     setRevealed(false);
+    setHintRevealed(false);
   }
 
   function submit() {
@@ -97,11 +99,13 @@ export default function GameWinner() {
 
   function goPrev() {
     reset();
+    setHintRevealed(false);
     setPuzzleIdx(i => (i - 1 + GAME_WINNER_PUZZLES.length) % GAME_WINNER_PUZZLES.length);
   }
 
   function goNext() {
     reset();
+    setHintRevealed(false);
     setPuzzleIdx(i => (i + 1) % GAME_WINNER_PUZZLES.length);
   }
 
@@ -133,10 +137,19 @@ export default function GameWinner() {
         </div>
       </div>
 
-      {/* Puzzle title + flavor */}
+      {/* Puzzle title + hint (click to reveal) */}
       <div className="cf-puzzle-title-block">
         <span className="cf-puzzle-title">{puzzle.title}</span>
-        {puzzle.flavor && <span className="cf-puzzle-flavor">"{puzzle.flavor}"</span>}
+        {puzzle.flavor && (
+          hintRevealed
+            ? <span className="cf-puzzle-flavor">"{puzzle.flavor}"</span>
+            : <button
+                className="cf-hint-btn"
+                onClick={() => setHintRevealed(true)}
+              >
+                💡 Show Hint
+              </button>
+        )}
       </div>
 
       {/* Scenario + opponent life */}
