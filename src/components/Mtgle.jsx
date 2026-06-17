@@ -70,7 +70,7 @@ function updateStreak(won) {
 }
 
 /* ── Hint definitions ─────────────────────────────────────────────────────── */
-const MAX_GUESSES = 7;
+const MAX_GUESSES = 8;
 
 const SUPERTYPES = new Set(['legendary', 'basic', 'snow', 'world', 'tribal', 'kindred']);
 const MAIN_TYPES = new Set(['creature', 'enchantment', 'artifact', 'instant', 'sorcery', 'land', 'planeswalker', 'battle']);
@@ -110,13 +110,14 @@ function extractKeywords(card) {
 
 function getHints(card) {
   return [
-    { label: 'Card Type',  value: simplifyTypeLine(card.type_line) },
-    { label: 'Mana Cost',  value: card.mana_cost || '{0}' },
+    { label: 'Card Type',   value: simplifyTypeLine(card.type_line) },
+    { label: 'Mana Value',  value: `${card.cmc ?? 0}` },
     { label: 'First Letter', value: `The card name starts with "${card.name[0].toUpperCase()}"` },
-    { label: 'Subtypes',   value: extractSubtypes(card.type_line) ?? '(none)' },
-    { label: 'Keywords',   value: extractKeywords(card) },
-    { label: 'Set',        value: card.set_name },
-    { label: 'Art Crop',   value: card.image_uris?.art_crop ?? card.card_faces?.[0]?.image_uris?.art_crop ?? null, isArt: true },
+    { label: 'Subtypes',    value: extractSubtypes(card.type_line) ?? '(none)' },
+    { label: 'Mana Cost',   value: card.mana_cost || '{0}' },
+    { label: 'Keywords',    value: extractKeywords(card) },
+    { label: 'Set',         value: card.set_name },
+    { label: 'Art Crop',    value: card.image_uris?.art_crop ?? card.card_faces?.[0]?.image_uris?.art_crop ?? null, isArt: true },
   ];
 }
 
@@ -259,7 +260,7 @@ export default function Mtgle({ overrideCard = null, onNewGame = null }) {
       {/* Instructions */}
       {game.guesses.length === 0 && !gameOver && (
         <p className="mtgle-instructions">
-          Guess the MTG card! Card type is free — each wrong answer reveals another hint. 7 guesses total.
+          Guess the MTG card! Card type is free — each wrong answer reveals another hint. 8 guesses total.
         </p>
       )}
 

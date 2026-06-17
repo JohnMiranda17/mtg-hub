@@ -1,13 +1,13 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, beforeEach, afterEach, describe, test, expect } from 'vitest';
 
-// Mock getCardOldestPrinting to avoid the module-level sfetch cache interfering between tests
+// Mock getCardOldestPrinting and getCheapestPrintingPrice to avoid sfetch network calls
 vi.mock('../utils/scryfall', async (importOriginal) => {
   const original = await importOriginal();
-  return { ...original, getCardOldestPrinting: vi.fn() };
+  return { ...original, getCardOldestPrinting: vi.fn(), getCheapestPrintingPrice: vi.fn() };
 });
 
-import { getCardOldestPrinting } from '../utils/scryfall';
+import { getCardOldestPrinting, getCheapestPrintingPrice } from '../utils/scryfall';
 import NoHintMtgle, { compareCards, getCardColors, getScoreTier } from '../components/NoHintMtgle';
 
 // ── Pure-function unit tests ──────────────────────────────────────────────────
@@ -162,6 +162,7 @@ beforeEach(() => {
   getCardOldestPrinting
     .mockResolvedValueOnce(MOCK_TARGET)
     .mockResolvedValue(BLACK_LOTUS);
+  getCheapestPrintingPrice.mockResolvedValue(0.50);
 });
 
 afterEach(() => {
@@ -221,6 +222,11 @@ describe('NoHintMtgle component', () => {
     await waitFor(() => expect(screen.getByText(/Legendary/i)).toBeInTheDocument());
   });
 
+  test('shows cheapest printing price hint', async () => {
+    await renderAndWait();
+    await waitFor(() => expect(screen.getByText(/\$0\.50/)).toBeInTheDocument());
+  });
+
   test('saves game to localStorage after a guess', async () => {
     await renderAndWait();
     const input = screen.getByPlaceholderText(/Guess any card name/i);
@@ -228,5 +234,82 @@ describe('NoHintMtgle component', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Guess$/ }));
     await waitFor(() => screen.getByText('Black Lotus'));
     expect(localStorage.getItem('mtg-hub:mtgle-nh-game')).not.toBeNull();
+  });
+
+  test('shows Share Result button after daily game ends', async () => {
+    getCardOldestPrinting
+      .mockReset()
+      .mockResolvedValueOnce(MOCK_TARGET)
+      .mockResolvedValue(MOCK_TARGET);
+
+    await renderAndWait();
+    const input = screen.getByPlaceholderText(/Guess any card name/i);
+    fireEvent.change(input, { target: { value: 'Sol Ring' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Guess$/ }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Share Result/i })).toBeInTheDocument());
+  });
+});
+
+// ── Custom mode ───────────────────────────────────────────────────────────────
+
+describe('NoHintMtgle in custom mode', () => {
+  beforeEach(() => {
+    getCardOldestPrinting.mockReset();
+    getCardOldestPrinting.mockResolvedValue(BLACK_LOTUS);
+    getCheapestPrintingPrice.mockResolvedValue(0.50);
+  });
+
+  async function renderCustom(onNewGame = vi.fn()) {
+    render(<NoHintMtgle overrideCard={MOCK_TARGET} onNewGame={onNewGame} />);
+    await waitFor(() => expect(screen.getByText('🧠 No-Hint Mode')).toBeInTheDocument());
+  }
+
+  test('renders No-Hint Mode header with Custom badge', async () => {
+    await renderCustom();
+    expect(screen.getByText('Custom')).toBeInTheDocument();
+    expect(screen.queryByText(/^#\d+$/)).not.toBeInTheDocument();
+  });
+
+  test('does not save to localStorage after a guess', async () => {
+    await renderCustom();
+    const input = screen.getByPlaceholderText(/Guess any card name/i);
+    fireEvent.change(input, { target: { value: 'Black Lotus' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Guess$/ }));
+    await waitFor(() => screen.getByText('Black Lotus'));
+    expect(localStorage.getItem('mtg-hub:mtgle-nh-game')).toBeNull();
+  });
+
+  test('shows New Custom Game button after winning', async () => {
+    getCardOldestPrinting.mockResolvedValue(MOCK_TARGET);
+    await renderCustom();
+    const input = screen.getByPlaceholderText(/Guess any card name/i);
+    fireEvent.change(input, { target: { value: 'Sol Ring' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Guess$/ }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /New Custom Game/i })).toBeInTheDocument()
+    );
+  });
+
+  test('clicking New Custom Game calls onNewGame', async () => {
+    getCardOldestPrinting.mockResolvedValue(MOCK_TARGET);
+    const onNewGame = vi.fn();
+    await renderCustom(onNewGame);
+    const input = screen.getByPlaceholderText(/Guess any card name/i);
+    fireEvent.change(input, { target: { value: 'Sol Ring' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Guess$/ }));
+    await waitFor(() =>
+      fireEvent.click(screen.getByRole('button', { name: /New Custom Game/i }))
+    );
+    expect(onNewGame).toHaveBeenCalledOnce();
+  });
+
+  test('does not show Share Result button in custom mode after win', async () => {
+    getCardOldestPrinting.mockResolvedValue(MOCK_TARGET);
+    await renderCustom();
+    const input = screen.getByPlaceholderText(/Guess any card name/i);
+    fireEvent.change(input, { target: { value: 'Sol Ring' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Guess$/ }));
+    await waitFor(() => screen.getByRole('button', { name: /New Custom Game/i }));
+    expect(screen.queryByText(/Share Result/i)).not.toBeInTheDocument();
   });
 });

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getRandomCard } from '../utils/scryfall';
 import Mtgle from '../components/Mtgle';
+import NoHintMtgle from '../components/NoHintMtgle';
 
 const COLORS = [
   { code: 'w', label: 'White',     symbol: 'W' },
@@ -14,51 +15,66 @@ const COLORS = [
 const TYPES = ['Creature', 'Instant', 'Sorcery', 'Enchantment', 'Artifact', 'Planeswalker', 'Land', 'Battle'];
 const RARITIES = ['Common', 'Uncommon', 'Rare', 'Mythic'];
 
-export function buildQuery(filters) {
+export function buildQuery({ colors, types, rarities, sets, bannedColors = [], bannedTypes = [], bannedRarities = [], bannedSets = [] }) {
   const parts = [];
 
-  if (filters.colors.length > 0) {
-    parts.push(`(${filters.colors.map(c => `c:${c}`).join(' or ')})`);
-  }
-  if (filters.types.length > 0) {
-    parts.push(`(${filters.types.map(t => `t:${t.toLowerCase()}`).join(' or ')})`);
-  }
-  if (filters.rarities.length > 0) {
-    parts.push(`(${filters.rarities.map(r => `r:${r.toLowerCase()}`).join(' or ')})`);
-  }
-  if (filters.sets.length > 0) {
-    parts.push(`(${filters.sets.map(s => `e:${s.trim().toLowerCase()}`).join(' or ')})`);
-  }
+  if (colors.length > 0)    parts.push(`(${colors.map(c => `c:${c}`).join(' or ')})`);
+  if (types.length > 0)     parts.push(`(${types.map(t => `t:${t.toLowerCase()}`).join(' or ')})`);
+  if (rarities.length > 0)  parts.push(`(${rarities.map(r => `r:${r.toLowerCase()}`).join(' or ')})`);
+  if (sets.length > 0)      parts.push(`(${sets.map(s => `e:${s.trim().toLowerCase()}`).join(' or ')})`);
+  bannedColors.forEach(c =>   parts.push(`-c:${c}`));
+  bannedTypes.forEach(t =>    parts.push(`-t:${t.toLowerCase()}`));
+  bannedRarities.forEach(r => parts.push(`-r:${r.toLowerCase()}`));
+  bannedSets.forEach(s =>     parts.push(`-e:${s.trim().toLowerCase()}`));
 
-  // Exclude tokens and non-English cards from the random draw
   parts.push('-is:token lang:en');
 
   return parts.join(' ');
 }
 
-function toggle(arr, val) {
-  return arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val];
+function cycleState(current) {
+  if (!current) return 'include';
+  if (current === 'include') return 'exclude';
+  return '';
 }
 
-function FilterPill({ label, active, onClick }) {
+function FilterPill({ label, state, onClick }) {
+  const cls = state === 'include' ? ' filter-pill-include'
+            : state === 'exclude' ? ' filter-pill-exclude'
+            : '';
+  const prefix = state === 'include' ? '✓ ' : state === 'exclude' ? '✕ ' : '';
   return (
     <button
-      className={`filter-pill${active ? ' filter-pill-active' : ''}`}
+      className={`filter-pill${cls}`}
       onClick={onClick}
       type="button"
     >
-      {label}
+      {prefix}{label}
     </button>
   );
 }
 
+const GAME_MODES = [
+  { value: 'regular', label: 'Regular MTGLE' },
+  { value: 'nohint',  label: '🧠 No-Hint Mode' },
+];
+
 function GameBuilder({ onCard }) {
-  const [colors,   setColors]   = useState([]);
-  const [types,    setTypes]    = useState([]);
-  const [rarities, setRarities] = useState([]);
-  const [setInput, setSetInput] = useState('');
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
+  const [colorState,  setColorState]  = useState({});
+  const [typeState,   setTypeState]   = useState({});
+  const [rarityState, setRarityState] = useState({});
+  const [setInput,    setSetInput]    = useState('');
+  const [banSetInput, setBanSetInput] = useState('');
+  const [gameMode,    setGameMode]    = useState('regular');
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState('');
+
+  const includeColors   = Object.entries(colorState).filter(([,v]) => v === 'include').map(([k]) => k);
+  const excludeColors   = Object.entries(colorState).filter(([,v]) => v === 'exclude').map(([k]) => k);
+  const includeTypes    = Object.entries(typeState).filter(([,v]) => v === 'include').map(([k]) => k);
+  const excludeTypes    = Object.entries(typeState).filter(([,v]) => v === 'exclude').map(([k]) => k);
+  const includeRarities = Object.entries(rarityState).filter(([,v]) => v === 'include').map(([k]) => k);
+  const excludeRarities = Object.entries(rarityState).filter(([,v]) => v === 'exclude').map(([k]) => k);
 
   async function handleCreate() {
     setError('');
@@ -67,9 +83,21 @@ function GameBuilder({ onCard }) {
       const sets = setInput.trim()
         ? setInput.split(',').map(s => s.trim()).filter(Boolean)
         : [];
-      const query = buildQuery({ colors, types, rarities, sets });
-      const card  = await getRandomCard(query);
-      onCard(card);
+      const bannedSets = banSetInput.trim()
+        ? banSetInput.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+      const query = buildQuery({
+        colors:   includeColors,
+        types:    includeTypes,
+        rarities: includeRarities,
+        sets,
+        bannedColors:   excludeColors,
+        bannedTypes:    excludeTypes,
+        bannedRarities: excludeRarities,
+        bannedSets,
+      });
+      const card = await getRandomCard(query);
+      onCard(card, gameMode);
     } catch (e) {
       setError(e.message ?? 'Could not fetch a card. Try different filters.');
     } finally {
@@ -81,7 +109,7 @@ function GameBuilder({ onCard }) {
     <div className="custom-mtgle-builder">
       <p className="custom-mtgle-intro">
         Choose your filters and we'll pull a random matching card from Scryfall.
-        Leave a section empty to include all options.
+        Click once to include, click twice to exclude. Leave a section empty to include all options.
       </p>
 
       <div className="filter-section">
@@ -91,8 +119,8 @@ function GameBuilder({ onCard }) {
             <FilterPill
               key={c.code}
               label={`${c.symbol} ${c.label}`}
-              active={colors.includes(c.code)}
-              onClick={() => setColors(toggle(colors, c.code))}
+              state={colorState[c.code] ?? ''}
+              onClick={() => setColorState(s => ({ ...s, [c.code]: cycleState(s[c.code] ?? '') }))}
             />
           ))}
         </div>
@@ -105,8 +133,8 @@ function GameBuilder({ onCard }) {
             <FilterPill
               key={t}
               label={t}
-              active={types.includes(t)}
-              onClick={() => setTypes(toggle(types, t))}
+              state={typeState[t] ?? ''}
+              onClick={() => setTypeState(s => ({ ...s, [t]: cycleState(s[t] ?? '') }))}
             />
           ))}
         </div>
@@ -119,15 +147,15 @@ function GameBuilder({ onCard }) {
             <FilterPill
               key={r}
               label={r}
-              active={rarities.includes(r)}
-              onClick={() => setRarities(toggle(rarities, r))}
+              state={rarityState[r] ?? ''}
+              onClick={() => setRarityState(s => ({ ...s, [r]: cycleState(s[r] ?? '') }))}
             />
           ))}
         </div>
       </div>
 
       <div className="filter-section">
-        <div className="filter-section-label">Set Codes <span className="filter-optional">(optional)</span></div>
+        <div className="filter-section-label">Include Sets <span className="filter-optional">(optional)</span></div>
         <input
           className="filter-set-input"
           type="text"
@@ -135,10 +163,37 @@ function GameBuilder({ onCard }) {
           value={setInput}
           onChange={e => setSetInput(e.target.value)}
         />
+      </div>
+
+      <div className="filter-section">
+        <div className="filter-section-label">Exclude Sets <span className="filter-optional">(optional)</span></div>
+        <input
+          className="filter-set-input"
+          type="text"
+          placeholder="e.g. lea, leb, 2ed"
+          value={banSetInput}
+          onChange={e => setBanSetInput(e.target.value)}
+        />
         <p className="filter-set-hint">
           Comma-separated Scryfall set codes. Find codes at{' '}
           <a href="https://scryfall.com/sets" target="_blank" rel="noreferrer">scryfall.com/sets ↗</a>
         </p>
+      </div>
+
+      <div className="filter-section">
+        <div className="filter-section-label">Game Mode</div>
+        <div className="filter-pills">
+          {GAME_MODES.map(m => (
+            <button
+              key={m.value}
+              className={`filter-pill${gameMode === m.value ? ' filter-pill-include' : ''}`}
+              onClick={() => setGameMode(m.value)}
+              type="button"
+            >
+              {gameMode === m.value ? '✓ ' : ''}{m.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error && <p className="custom-mtgle-error">{error}</p>}
@@ -156,6 +211,16 @@ function GameBuilder({ onCard }) {
 
 export default function CustomMtglePage() {
   const [customCard, setCustomCard] = useState(null);
+  const [gameMode,   setGameMode]   = useState('regular');
+
+  function handleCard(card, mode) {
+    setCustomCard(card);
+    setGameMode(mode);
+  }
+
+  function handleNewGame() {
+    setCustomCard(null);
+  }
 
   return (
     <div className="page-wrap">
@@ -165,13 +230,21 @@ export default function CustomMtglePage() {
       </div>
 
       {customCard ? (
-        <Mtgle
-          key={customCard.id}
-          overrideCard={customCard}
-          onNewGame={() => setCustomCard(null)}
-        />
+        gameMode === 'nohint' ? (
+          <NoHintMtgle
+            key={customCard.id}
+            overrideCard={customCard}
+            onNewGame={handleNewGame}
+          />
+        ) : (
+          <Mtgle
+            key={customCard.id}
+            overrideCard={customCard}
+            onNewGame={handleNewGame}
+          />
+        )
       ) : (
-        <GameBuilder onCard={setCustomCard} />
+        <GameBuilder onCard={handleCard} />
       )}
     </div>
   );

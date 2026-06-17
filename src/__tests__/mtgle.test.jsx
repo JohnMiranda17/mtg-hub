@@ -48,10 +48,10 @@ describe('Mtgle', () => {
     expect(screen.getByText(/MTGLE/)).toBeInTheDocument();
   });
 
-  test('shows 7 guess slots', async () => {
+  test('shows 8 guess slots', async () => {
     await renderAndWait();
     const slots = screen.getAllByText(/Guess \d|Current guess/);
-    expect(slots.length).toBe(7);
+    expect(slots.length).toBe(8);
   });
 
   test('card type hint is shown immediately for free', async () => {
@@ -61,21 +61,34 @@ describe('Mtgle', () => {
   });
 
 
-  test('mana cost hint revealed after first wrong guess', async () => {
+  test('mana value hint revealed after first wrong guess', async () => {
     await renderAndWait();
-    expect(screen.queryByText('Mana Cost:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Mana Value:')).not.toBeInTheDocument();
 
     const input = screen.getByPlaceholderText(/Guess the card/i);
     fireEvent.change(input, { target: { value: 'Wrong Card' } });
     fireEvent.click(screen.getByRole('button', { name: /Guess/i }));
 
-    await waitFor(() => expect(screen.getByText('Mana Cost:')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Mana Value:')).toBeInTheDocument());
   });
 
-  test('set hint revealed after five wrong guesses', async () => {
+  test('exact mana cost hint revealed after four wrong guesses', async () => {
     await renderAndWait();
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 4; i++) {
+      const input = screen.getByPlaceholderText(/Guess the card/i);
+      fireEvent.change(input, { target: { value: `Wrong ${i}` } });
+      fireEvent.click(screen.getByRole('button', { name: /Guess/i }));
+      await waitFor(() => expect(screen.getAllByText(/❌/).length).toBe(i + 1));
+    }
+
+    expect(screen.getByText('Mana Cost:')).toBeInTheDocument();
+  });
+
+  test('set hint revealed after six wrong guesses', async () => {
+    await renderAndWait();
+
+    for (let i = 0; i < 6; i++) {
       const input = screen.getByPlaceholderText(/Guess the card/i);
       fireEvent.change(input, { target: { value: `Wrong ${i}` } });
       fireEvent.click(screen.getByRole('button', { name: /Guess/i }));
@@ -86,10 +99,10 @@ describe('Mtgle', () => {
     expect(screen.getByText('Alpha')).toBeInTheDocument();
   });
 
-  test('art crop shown after six wrong guesses', async () => {
+  test('art crop shown after seven wrong guesses', async () => {
     await renderAndWait();
 
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       const input = screen.getByPlaceholderText(/Guess the card/i);
       fireEvent.change(input, { target: { value: `Wrong ${i}` } });
       fireEvent.click(screen.getByRole('button', { name: /Guess/i }));
@@ -108,14 +121,14 @@ describe('Mtgle', () => {
     await waitFor(() => expect(screen.getByText(/You got it/i)).toBeInTheDocument());
   });
 
-  test('seven wrong guesses shows loss message', async () => {
+  test('eight wrong guesses shows loss message', async () => {
     await renderAndWait();
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 8; i++) {
       const input = screen.getByPlaceholderText(/Guess the card/i);
       fireEvent.change(input, { target: { value: `Wrong ${i}` } });
       fireEvent.click(screen.getByRole('button', { name: /Guess/i }));
-      if (i < 6) {
+      if (i < 7) {
         await waitFor(() => expect(screen.getAllByText(/❌/).length).toBe(i + 1));
       }
     }
@@ -165,14 +178,14 @@ describe('buildShareText', () => {
   test('shows puzzle number and guess count on win', () => {
     const text = buildShareText([{ text: 'Sol Ring', correct: true }], true, 5);
     expect(text).toContain('MTGLE #5');
-    expect(text).toContain('1/7');
+    expect(text).toContain('1/8');
     expect(text).toContain('✅');
   });
 
-  test('shows X/7 on loss', () => {
-    const guesses = Array(7).fill(null).map(() => ({ text: 'Wrong', correct: false }));
+  test('shows X/8 on loss', () => {
+    const guesses = Array(8).fill(null).map(() => ({ text: 'Wrong', correct: false }));
     const text = buildShareText(guesses, false, 10);
-    expect(text).toContain('X/7');
+    expect(text).toContain('X/8');
     expect(text).not.toContain('✅');
   });
 

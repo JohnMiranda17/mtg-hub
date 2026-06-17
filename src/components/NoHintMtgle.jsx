@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getCardOldestPrinting } from '../utils/scryfall';
+import { getCardOldestPrinting, getCheapestPrintingPrice, formatPrice } from '../utils/scryfall';
 import { MTGLE_POOL } from '../data/mtglePool';
 import { simplifyTypeLine, shuffledIndices } from './Mtgle';
 import CardSearchInput from './CardSearchInput';
@@ -142,19 +142,32 @@ function TableHeader() {
 }
 
 /* ── Main component ───────────────────────────────────────────────────────── */
-export default function NoHintMtgle() {
-  const [targetCard, setTargetCard] = useState(null);
-  const [loadError,  setLoadError]  = useState('');
-  const [game,       setGame]       = useState(null);
+export default function NoHintMtgle({ overrideCard, onNewGame } = {}) {
+  const [targetCard,    setTargetCard]    = useState(null);
+  const [cheapestPrice, setCheapestPrice] = useState(null);
+  const [loadError,     setLoadError]     = useState('');
+  const [game,          setGame]          = useState(null);
   const [guess,      setGuess]      = useState('');
   const [guessError, setGuessError] = useState('');
   const [fetching,   setFetching]   = useState(false);
   const guessRef = useRef('');
 
   useEffect(() => {
+    if (overrideCard) {
+      setTargetCard(overrideCard);
+      getCheapestPrintingPrice(overrideCard)
+        .then(price => setCheapestPrice(price))
+        .catch(() => {});
+      setGame({ date: null, guesses: [], won: false, lost: false });
+      return;
+    }
+
     getCardOldestPrinting(dailyCardName())
       .then(card => {
         setTargetCard(card);
+        getCheapestPrintingPrice(card)
+          .then(price => setCheapestPrice(price))
+          .catch(() => {});
         const existing = loadNhGame();
         if (existing) {
           setGame(existing);
@@ -191,7 +204,7 @@ export default function NoHintMtgle() {
 
     const updated = { ...game, guesses: newGuesses, won, lost };
     setGame(updated);
-    saveNhGame(updated);
+    if (!overrideCard) saveNhGame(updated);
     setGuess('');
     guessRef.current = '';
   }
@@ -201,19 +214,25 @@ export default function NoHintMtgle() {
 
   const gameOver  = game.won || game.lost;
   const scoreTier = game.won ? getScoreTier(game.guesses.length) : null;
-  const puzzleNum = dayNumber() % POOL_ORDER.length + 1;
+  const puzzleNum = overrideCard ? null : dayNumber() % POOL_ORDER.length + 1;
 
   return (
     <div className="nh-wrap">
       <div className="nh-header">
         <div className="nh-title-row">
           <span className="nh-title">🧠 No-Hint Mode</span>
-          <span className="mtgle-puzzle-num">#{puzzleNum}</span>
+          {overrideCard
+            ? <span className="mtgle-badge">Custom</span>
+            : <span className="mtgle-puzzle-num">#{puzzleNum}</span>
+          }
         </div>
         <p className="nh-subtitle">
           Guess any card — each guess reveals how its attributes compare to the target.
           Green = match · Red = miss · ↑↓ = CMC direction
         </p>
+        {cheapestPrice != null && (
+          <p className="nh-price-hint">💰 Cheapest printing: {formatPrice(cheapestPrice)}</p>
+        )}
       </div>
 
       {game.guesses.length > 0 && (
@@ -268,7 +287,30 @@ export default function NoHintMtgle() {
             </div>
           </div>
 
-          <p className="mtgle-comeback">Come back tomorrow for puzzle #{puzzleNum + 1}!</p>
+          {onNewGame ? (
+            <button className="btn-primary mtgle-new-game" onClick={onNewGame}>
+              New Custom Game
+            </button>
+          ) : (
+            <>
+              <p className="mtgle-comeback">Come back tomorrow for puzzle #{puzzleNum + 1}!</p>
+              <button
+                className="btn-secondary mtgle-share-btn"
+                onClick={() => {
+                  const result = game.won
+                    ? `${game.guesses.length}/${MAX_GUESSES}`
+                    : `X/${MAX_GUESSES}`;
+                  const rows = game.guesses.map(g =>
+                    g.isCorrect ? '🟩🟩🟩🟩🟩' : '⬛⬛⬛⬛⬛'
+                  ).join('\n');
+                  const text = `🧠 No-Hint MTGLE #${puzzleNum} ${result}\n${rows}\nhttps://JohnMiranda17.github.io/mtg-hub/no-hint-mtgle`;
+                  navigator.clipboard?.writeText(text);
+                }}
+              >
+                Share Result
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

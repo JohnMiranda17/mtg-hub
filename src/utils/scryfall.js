@@ -65,6 +65,15 @@ export async function getRandomCard(query) {
   return res.json();
 }
 
+export async function getCheapestPrintingPrice(card) {
+  const printings = await getPrintings(card);
+  const prices = printings
+    .map(p => parseFloat(p.prices?.usd))
+    .filter(p => !isNaN(p) && p > 0);
+  if (!prices.length) return null;
+  return Math.min(...prices);
+}
+
 export function formatPrice(usd) {
   if (usd == null) return '—';
   return `$${parseFloat(usd).toFixed(2)}`;

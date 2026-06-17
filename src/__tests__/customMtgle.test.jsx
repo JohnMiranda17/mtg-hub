@@ -1,6 +1,13 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, beforeEach, afterEach, describe, test, expect } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+
+vi.mock('../utils/scryfall', async (importOriginal) => {
+  const original = await importOriginal();
+  return { ...original, getCheapestPrintingPrice: vi.fn(), getCardOldestPrinting: vi.fn() };
+});
+
+import { getCheapestPrintingPrice, getCardOldestPrinting } from '../utils/scryfall';
 import CustomMtglePage, { buildQuery } from '../pages/CustomMtglePage';
 import Mtgle from '../components/Mtgle';
 
@@ -41,6 +48,34 @@ describe('buildQuery', () => {
     expect(q).toContain('e:ltr');
     expect(q).toContain('e:dsk');
   });
+
+  test('bannedColors produce -c: predicates', () => {
+    const q = buildQuery({ colors: [], types: [], rarities: [], sets: [], bannedColors: ['w', 'b'] });
+    expect(q).toContain('-c:w');
+    expect(q).toContain('-c:b');
+  });
+
+  test('bannedTypes produce -t: predicates', () => {
+    const q = buildQuery({ colors: [], types: [], rarities: [], sets: [], bannedTypes: ['Creature'] });
+    expect(q).toContain('-t:creature');
+  });
+
+  test('bannedRarities produce -r: predicates', () => {
+    const q = buildQuery({ colors: [], types: [], rarities: [], sets: [], bannedRarities: ['Common'] });
+    expect(q).toContain('-r:common');
+  });
+
+  test('bannedSets produce -e: predicates lowercased', () => {
+    const q = buildQuery({ colors: [], types: [], rarities: [], sets: [], bannedSets: ['LEA', 'LEB'] });
+    expect(q).toContain('-e:lea');
+    expect(q).toContain('-e:leb');
+  });
+
+  test('include and exclude can coexist in same query', () => {
+    const q = buildQuery({ colors: ['r'], types: [], rarities: [], sets: [], bannedColors: ['b'] });
+    expect(q).toContain('c:r');
+    expect(q).toContain('-c:b');
+  });
 });
 
 // ── CustomMtglePage form ──────────────────────────────────────────────────────
@@ -73,6 +108,7 @@ beforeEach(() => {
   global.fetch = vi.fn(() =>
     Promise.resolve({ ok: true, json: () => Promise.resolve(MOCK_CARD) })
   );
+  getCheapestPrintingPrice.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -106,9 +142,14 @@ describe('CustomMtglePage builder form', () => {
     expect(screen.getByRole('button', { name: /Mythic/ })).toBeInTheDocument();
   });
 
-  test('shows set code input', () => {
+  test('shows include set code input', () => {
     renderPage();
     expect(screen.getByPlaceholderText(/e\.g\. dsk/i)).toBeInTheDocument();
+  });
+
+  test('shows exclude set code input', () => {
+    renderPage();
+    expect(screen.getByPlaceholderText(/e\.g\. lea/i)).toBeInTheDocument();
   });
 
   test('shows Create Game button', () => {
@@ -116,20 +157,43 @@ describe('CustomMtglePage builder form', () => {
     expect(screen.getByRole('button', { name: /Create Game/i })).toBeInTheDocument();
   });
 
-  test('toggling a pill marks it active', () => {
+  test('toggling a pill marks it as include', () => {
     renderPage();
     const pill = screen.getByRole('button', { name: /Red/i });
-    expect(pill).not.toHaveClass('filter-pill-active');
+    expect(pill).not.toHaveClass('filter-pill-include');
     fireEvent.click(pill);
-    expect(pill).toHaveClass('filter-pill-active');
+    expect(pill).toHaveClass('filter-pill-include');
   });
 
-  test('toggling a pill twice deselects it', () => {
+  test('pill cycles include → exclude → neutral on repeated clicks', () => {
     renderPage();
     const pill = screen.getByRole('button', { name: /Red/i });
     fireEvent.click(pill);
+    expect(pill).toHaveClass('filter-pill-include');
     fireEvent.click(pill);
-    expect(pill).not.toHaveClass('filter-pill-active');
+    expect(pill).toHaveClass('filter-pill-exclude');
+    fireEvent.click(pill);
+    expect(pill).not.toHaveClass('filter-pill-include');
+    expect(pill).not.toHaveClass('filter-pill-exclude');
+  });
+
+  test('shows game mode toggle with Regular MTGLE and No-Hint Mode options', () => {
+    renderPage();
+    expect(screen.getByRole('button', { name: /Regular MTGLE/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /No-Hint Mode/i })).toBeInTheDocument();
+  });
+
+  test('Regular MTGLE is selected by default', () => {
+    renderPage();
+    expect(screen.getByRole('button', { name: /Regular MTGLE/i })).toHaveClass('filter-pill-include');
+    expect(screen.getByRole('button', { name: /No-Hint Mode/i })).not.toHaveClass('filter-pill-include');
+  });
+
+  test('clicking No-Hint Mode selects it and deselects Regular', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /No-Hint Mode/i }));
+    expect(screen.getByRole('button', { name: /No-Hint Mode/i })).toHaveClass('filter-pill-include');
+    expect(screen.getByRole('button', { name: /Regular MTGLE/i })).not.toHaveClass('filter-pill-include');
   });
 
   test('clicking Create Game calls Scryfall random endpoint', async () => {
@@ -147,6 +211,47 @@ describe('CustomMtglePage builder form', () => {
     fireEvent.click(screen.getByRole('button', { name: /Create Game/i }));
     await waitFor(() => expect(screen.getByText('Custom')).toBeInTheDocument());
     expect(screen.getByText('Custom')).toBeInTheDocument();
+  });
+});
+
+// ── NoHintMtgle in custom mode via page ──────────────────────────────────────
+
+describe('CustomMtglePage in no-hint mode', () => {
+  beforeEach(() => {
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, json: () => Promise.resolve(MOCK_CARD) })
+    );
+    getCheapestPrintingPrice.mockResolvedValue(null);
+    getCardOldestPrinting.mockResolvedValue(MOCK_CARD);
+  });
+
+  test('creates a No-Hint game and shows No-Hint Mode header', async () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /No-Hint Mode/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Create Game/i }));
+    await waitFor(() => expect(screen.getByText('🧠 No-Hint Mode')).toBeInTheDocument());
+  });
+
+  test('shows Custom badge in no-hint custom mode', async () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /No-Hint Mode/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Create Game/i }));
+    await waitFor(() => expect(screen.getByText('Custom')).toBeInTheDocument());
+    expect(screen.queryByText(/^#\d+$/)).not.toBeInTheDocument();
+  });
+
+  test('shows New Custom Game button after winning in no-hint mode', async () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /No-Hint Mode/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Create Game/i }));
+    await waitFor(() => expect(screen.getByText('🧠 No-Hint Mode')).toBeInTheDocument());
+
+    const input = screen.getByPlaceholderText(/Guess any card name/i);
+    fireEvent.change(input, { target: { value: 'Black Lotus' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Guess$/ }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /New Custom Game/i })).toBeInTheDocument()
+    );
   });
 });
 

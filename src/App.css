@@ -800,7 +800,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .filter-pills { display: flex; flex-wrap: wrap; gap: .4rem; }
 .filter-pill { background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; color: var(--text-dim); cursor: pointer; font-size: .8rem; padding: .3rem .75rem; transition: all .15s; }
 .filter-pill:hover { border-color: var(--gold-dim); color: var(--text); }
-.filter-pill-active { background: rgba(201,168,76,.15); border-color: var(--gold); color: var(--gold) !important; font-weight: 600; }
+.filter-pill-include { background: rgba(201,168,76,.15); border-color: var(--gold); color: var(--gold) !important; font-weight: 600; }
+.filter-pill-exclude { background: rgba(200,60,60,.12); border-color: rgba(200,60,60,.5); color: #e07070 !important; font-weight: 600; }
 .filter-set-input { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: .87rem; margin-top: .25rem; padding: .45rem .7rem; width: 100%; box-sizing: border-box; }
 .filter-set-input:focus { border-color: var(--gold-dim); outline: none; }
 .filter-set-hint { color: var(--text-dim); font-size: .75rem; margin-top: .35rem; }
@@ -815,6 +816,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .nh-title-row { align-items: center; display: flex; gap: .75rem; margin-bottom: .3rem; }
 .nh-title { color: var(--gold); font-size: 1.1rem; font-weight: 700; }
 .nh-subtitle { color: var(--text-dim); font-size: .8rem; line-height: 1.5; margin: 0; }
+.nh-price-hint { color: var(--text-dim); font-size: .8rem; margin: .3rem 0 0; }
 .nh-progress { color: var(--text-dim); font-size: .8rem; margin-bottom: .5rem; }
 .nh-guess-error { background: rgba(200,60,60,.1); border: 1px solid rgba(200,60,60,.4); border-radius: 6px; color: #e07070; font-size: .82rem; margin-bottom: .5rem; padding: .4rem .75rem; }
 
