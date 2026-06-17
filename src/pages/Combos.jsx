@@ -3,15 +3,17 @@ import { Link } from 'react-router-dom';
 import CardSearchInput from '../components/CardSearchInput';
 import CardTooltip from '../components/CardTooltip';
 import ComboFinder from '../components/ComboFinder';
+import GameWinner from '../components/GameWinner';
 import { TOP_COMBOS, COMBO_TYPE_COLORS, dailyTopCombo } from '../data/topCombos';
 
 const PROXY_BASE = import.meta.env.VITE_SPELLBOOK_PROXY ?? '';
 const API_BASE   = PROXY_BASE || 'https://backend.commanderspellbook.com';
 
 const TABS = [
-  { id: 'search',      label: '🔍 Search'      },
-  { id: 'top-combos',  label: '⭐ Top Combos'  },
-  { id: 'combo-finder', label: '🔄 Combo Finder' },
+  { id: 'search',       label: '🔍 Search'       },
+  { id: 'top-combos',   label: '⭐ Top Combos'   },
+  { id: 'combo-finder', label: '🔄 Combo Finder'  },
+  { id: 'game-winner',  label: '🏆 Game Winner'   },
 ];
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
@@ -454,6 +456,7 @@ export default function Combos() {
       {tab === 'search'       && <SearchTab />}
       {tab === 'top-combos'   && <TopCombosTab />}
       {tab === 'combo-finder' && <ComboFinder />}
+      {tab === 'game-winner'  && <GameWinner />}
     </div>
   );
 }

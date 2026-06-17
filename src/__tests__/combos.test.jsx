@@ -30,11 +30,12 @@ describe('Combos page', () => {
     expect(screen.getByRole('heading', { name: /💥 Combos/i })).toBeInTheDocument();
   });
 
-  test('renders the three sub-tabs', () => {
+  test('renders all four sub-tabs', () => {
     renderCombos();
     expect(screen.getByRole('button', { name: /Search/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Top Combos/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Combo Finder/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Game Winner/i })).toBeInTheDocument();
   });
 
   test('Search tab is active by default', () => {
@@ -157,6 +158,32 @@ describe('Combos page', () => {
   test('Combo Finder submit is disabled without selections', () => {
     renderCombos();
     fireEvent.click(screen.getByRole('button', { name: /Combo Finder/i }));
+    expect(screen.getByRole('button', { name: /submit/i })).toBeDisabled();
+  });
+
+  test('switching to Game Winner tab renders the puzzle', () => {
+    renderCombos();
+    fireEvent.click(screen.getByRole('button', { name: /Game Winner/i }));
+    expect(screen.getAllByText(/🏆 Game Winner/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Puzzle \d+\/\d+/)).toBeInTheDocument();
+  });
+
+  test('Game Winner shows opponent life', () => {
+    renderCombos();
+    fireEvent.click(screen.getByRole('button', { name: /Game Winner/i }));
+    expect(screen.getByText(/Opponent life/i)).toBeInTheDocument();
+  });
+
+  test('Game Winner shows Submit and Reset buttons', () => {
+    renderCombos();
+    fireEvent.click(screen.getByRole('button', { name: /Game Winner/i }));
+    expect(screen.getByRole('button', { name: /submit/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /reset/i })).toBeInTheDocument();
+  });
+
+  test('Game Winner submit is disabled without selections', () => {
+    renderCombos();
+    fireEvent.click(screen.getByRole('button', { name: /Game Winner/i }));
     expect(screen.getByRole('button', { name: /submit/i })).toBeDisabled();
   });
 });

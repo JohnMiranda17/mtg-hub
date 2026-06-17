@@ -1138,3 +1138,19 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .spotlight-card-img-placeholder { aspect-ratio: 63 / 88; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: .4rem; }
 .spotlight-card-img-fallback { background: var(--bg3); }
 .spotlight-card-img-name { color: var(--text-dim); font-size: .65rem; line-height: 1.3; text-align: center; word-break: break-word; }
+
+/* ── Game Winner mini-game ───────────────────────────────────────────────── */
+.gw-wrap {}
+
+.gw-scenario-row { align-items: flex-start; display: flex; gap: 1rem; justify-content: space-between; margin-bottom: .75rem; flex-wrap: wrap; }
+.gw-scenario { color: var(--text-dim); font-size: .88rem; line-height: 1.6; margin: 0; flex: 1 1 200px; }
+
+.gw-life-badge { align-items: center; background: rgba(212,98,42,.1); border: 1px solid rgba(212,98,42,.35); border-radius: 8px; display: flex; flex-direction: column; flex-shrink: 0; gap: .15rem; min-width: 100px; padding: .6rem .9rem; text-align: center; }
+.gw-life-label { color: rgba(212,98,42,.9); font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.gw-life-total { color: #f26c3a; font-size: 2.2rem; font-weight: 800; line-height: 1; }
+.gw-poison-badge { background: rgba(160,40,200,.18); border-radius: 12px; color: #c86fe0; font-size: .72rem; font-weight: 600; padding: .15rem .45rem; }
+.gw-cmd-badge { background: rgba(212,170,42,.15); border-radius: 12px; color: var(--gold); font-size: .72rem; font-weight: 600; padding: .15rem .45rem; }
+
+.gw-opp-zone { background: rgba(180,40,40,.06); border-color: rgba(180,40,40,.2); }
+.gw-opp-zone .cf-zone-label { color: #e07070; }
+.gw-opp-chip { align-items: center; background: rgba(180,40,40,.12); border: 1px solid rgba(180,40,40,.25); border-radius: 5px; cursor: default; display: inline-flex; flex-direction: column; font-size: .8rem; gap: .15rem; padding: .3rem .55rem; }
