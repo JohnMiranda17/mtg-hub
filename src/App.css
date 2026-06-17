@@ -1036,3 +1036,92 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .timing-window-body p { color: var(--text-dim); font-size: .84rem; line-height: 1.6; margin: 0 0 .5rem; }
 .timing-window-example { background: rgba(255,255,255,.04); border-radius: 4px; color: var(--text-dim); font-size: .8rem; line-height: 1.55; padding: .45rem .7rem; }
 .timing-example-label { color: var(--gold); font-weight: 700; margin-right: .35rem; }
+
+/* ── CardTooltip portal ──────────────────────────────────────────────────── */
+.card-tooltip-trigger { border-bottom: 1px dotted rgba(212,162,74,.5); color: var(--gold); cursor: default; display: inline; }
+.card-tooltip-trigger:hover { border-bottom-color: var(--gold); color: var(--text); }
+.card-tooltip-portal { position: fixed; z-index: 9999; pointer-events: none; }
+.card-tooltip-img { border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.8); display: block; height: auto; width: 224px; }
+.card-tooltip-loading { align-items: center; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; color: var(--text-dim); display: flex; font-size: .8rem; height: 60px; justify-content: center; width: 224px; }
+
+/* ── Combos page shared additions ────────────────────────────────────────── */
+.combo-card { --combo-color: #d4622a; }
+.combo-size-badge { background: var(--combo-color, #d4622a); border-radius: 4px; color: #fff; font-size: .65rem; font-weight: 700; letter-spacing: .04em; padding: .15rem .45rem; text-transform: uppercase; white-space: nowrap; }
+.combo-cards-row { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .75rem; }
+.combo-section { margin-top: .65rem; }
+.combo-section-label { color: var(--text-dim); font-size: .7rem; font-weight: 700; letter-spacing: .06em; margin-bottom: .3rem; text-transform: uppercase; }
+.combo-prereq-text { color: var(--text); font-size: .84rem; line-height: 1.6; margin: 0; }
+.combo-steps { color: var(--text-dim); font-size: .84rem; line-height: 1.7; margin: 0; padding-left: 1.25rem; }
+.combo-steps li + li { margin-top: .2rem; }
+.combo-produces-full { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .25rem; }
+.combo-produce-tag { background: rgba(201,168,76,.1); border: 1px solid rgba(201,168,76,.2); border-radius: 4px; color: var(--gold); font-size: .7rem; padding: .1rem .4rem; }
+.combo-produce-more { color: var(--text-dim); font-size: .7rem; }
+.combo-mana { color: var(--gold); font-family: monospace; font-size: .85rem; }
+.combo-external-link { color: #7098c9; font-size: .8rem; margin-top: .75rem; display: inline-block; }
+.combo-external-link:hover { color: var(--gold); }
+.combo-filter-bar { align-items: center; display: flex; flex-wrap: wrap; gap: .65rem; justify-content: space-between; margin-bottom: .75rem; }
+.combo-result-count { color: var(--text-dim); font-size: .82rem; }
+.combo-filter-tabs { display: flex; gap: .35rem; flex-wrap: wrap; }
+.combo-filter-tab { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-dim); cursor: pointer; font-size: .78rem; padding: .25rem .65rem; transition: background .15s, color .15s; }
+.combo-filter-tab:hover { background: var(--bg3); color: var(--text); }
+.combo-filter-tab.active { background: rgba(212,98,42,.15); border-color: rgba(212,98,42,.4); color: #d4622a; font-weight: 600; }
+.combo-featured-header { align-items: center; cursor: pointer; display: flex; justify-content: space-between; user-select: none; }
+.combo-show-featured-btn { background: none; border: 1px dashed var(--border); border-radius: 6px; color: var(--text-dim); cursor: pointer; font-size: .82rem; margin-top: .5rem; padding: .4rem .9rem; width: 100%; }
+.combo-show-featured-btn:hover { border-color: var(--gold-dim); color: var(--text); }
+.combo-info-section { margin-top: 2rem; }
+
+/* ── Top Combos tab ──────────────────────────────────────────────────────── */
+.tc-daily { background: rgba(212,98,42,.07); border: 1px solid rgba(212,98,42,.25); border-radius: var(--radius); margin-bottom: 1.5rem; padding: 1rem; }
+.tc-daily-header { align-items: flex-start; display: flex; justify-content: space-between; margin-bottom: .75rem; }
+.tc-daily-eyebrow { color: #d4622a; font-size: .7rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.tc-daily-title { color: var(--text); font-size: 1rem; font-weight: 700; margin-top: .2rem; }
+.tc-filter-row { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .75rem; }
+
+/* ── Combo Finder mini-game ──────────────────────────────────────────────── */
+.cf-wrap { display: flex; flex-direction: column; gap: 1rem; }
+.cf-header { align-items: flex-start; display: flex; flex-wrap: wrap; gap: .75rem; justify-content: space-between; }
+.cf-title { color: var(--text); font-size: 1.1rem; font-weight: 700; margin: 0 0 .2rem; }
+.cf-subtitle { color: var(--text-dim); font-size: .84rem; line-height: 1.55; margin: 0; max-width: 55ch; }
+.cf-puzzle-nav { align-items: center; display: flex; gap: .5rem; }
+.cf-nav-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; color: var(--text); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: .25rem .6rem; }
+.cf-nav-btn:hover { background: var(--bg3); }
+.cf-puzzle-meta { align-items: center; display: flex; flex-direction: column; gap: .2rem; }
+.cf-difficulty { border-radius: 4px; font-size: .65rem; font-weight: 700; letter-spacing: .05em; padding: .15rem .45rem; text-transform: uppercase; }
+.cf-diff-easy   { background: rgba(74,201,122,.15); color: #4ac97a; }
+.cf-diff-medium { background: rgba(201,168,76,.15); color: #c9a84c; }
+.cf-diff-hard   { background: rgba(201,74,74,.15);  color: #c94a4a; }
+.cf-puzzle-num { color: var(--text-dim); font-size: .7rem; }
+.cf-puzzle-title-block { display: flex; flex-direction: column; gap: .15rem; }
+.cf-puzzle-title { color: var(--gold); font-size: 1rem; font-weight: 700; }
+.cf-puzzle-flavor { color: var(--text-dim); font-size: .8rem; font-style: italic; }
+.cf-mana-row { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; }
+.cf-mana-label { color: var(--text-dim); font-size: .78rem; font-weight: 600; }
+.cf-mana-pips { display: flex; flex-wrap: wrap; gap: .2rem; }
+.cf-mana-none { color: var(--text-dim); font-size: .78rem; font-style: italic; }
+.cf-board { display: flex; flex-direction: column; gap: .75rem; }
+.cf-zone { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem; }
+.cf-zone-label { color: var(--text-dim); font-size: .72rem; font-weight: 700; letter-spacing: .06em; margin-bottom: .5rem; text-transform: uppercase; }
+.cf-zone-cards { display: flex; flex-wrap: wrap; gap: .4rem; }
+.cf-card-chip { align-items: center; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; display: inline-flex; font-size: .82rem; gap: .3rem; line-height: 1.2; padding: .35rem .7rem; transition: background .12s, border-color .12s; }
+.cf-card-chip:hover { background: rgba(212,162,74,.1); border-color: var(--gold-dim); }
+.cf-card-selected { background: rgba(212,98,42,.2) !important; border-color: #d4622a !important; color: var(--text) !important; font-weight: 600; }
+.cf-card-note { color: var(--text-dim); font-size: .72rem; font-style: italic; }
+.cf-chip-name { color: inherit; }
+.cf-controls { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; gap: .6rem; padding: .85rem; }
+.cf-selected-summary { align-items: flex-start; display: flex; flex-wrap: wrap; gap: .35rem; }
+.cf-selected-label { color: var(--text-dim); font-size: .82rem; font-weight: 600; }
+.cf-selected-names { color: var(--gold); font-size: .82rem; font-weight: 600; }
+.cf-none-selected { color: var(--text-dim); font-size: .82rem; font-style: italic; }
+.cf-submit-row { align-items: center; display: flex; flex-wrap: wrap; gap: .5rem; }
+.cf-result-select { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: .84rem; padding: .35rem .6rem; }
+.cf-result-select:focus { border-color: var(--gold-dim); outline: none; }
+.cf-give-up-btn { color: var(--text-dim) !important; }
+.cf-feedback { align-items: flex-start; border-radius: var(--radius); display: flex; gap: .75rem; padding: .9rem 1rem; }
+.cf-feedback-icon { flex-shrink: 0; font-size: 1.2rem; line-height: 1.4; }
+.cf-feedback-title { color: var(--text); font-size: .9rem; font-weight: 700; margin-bottom: .3rem; }
+.cf-feedback-explanation { color: var(--text-dim); font-size: .84rem; line-height: 1.65; }
+.cf-feedback-hint { color: var(--text-dim); font-size: .84rem; line-height: 1.55; }
+.cf-feedback-pieces { color: var(--text-dim); font-size: .84rem; line-height: 1.6; margin-bottom: .2rem; }
+.cf-feedback-correct { background: rgba(74,201,122,.08); border: 1px solid rgba(74,201,122,.25); }
+.cf-feedback-wrong   { background: rgba(201,74,74,.08);  border: 1px solid rgba(201,74,74,.25); }
+.cf-feedback-reveal  { background: rgba(74,143,201,.08); border: 1px solid rgba(74,143,201,.25); }

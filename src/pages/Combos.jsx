@@ -1,104 +1,171 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import CardSearchInput from '../components/CardSearchInput';
+import CardTooltip from '../components/CardTooltip';
+import ComboFinder from '../components/ComboFinder';
+import { TOP_COMBOS, COMBO_TYPE_COLORS, dailyTopCombo } from '../data/topCombos';
 
 const PROXY_BASE = import.meta.env.VITE_SPELLBOOK_PROXY ?? '';
 const API_BASE   = PROXY_BASE || 'https://backend.commanderspellbook.com';
 
-/* ── Static featured combos ────────────────────────────────────────────────── */
-const FEATURED_COMBOS = [
-  {
-    id: 'dramatic-reversal',
-    cards: ['Isochron Scepter', 'Dramatic Reversal'],
-    type: 'Infinite Mana',
-    color: '#4a8fc9',
-    icon: '💎',
-    prereqs: 'Isochron Scepter with Dramatic Reversal imprinted. At least 3 mana from non-land sources (mana rocks).',
-    steps: [
-      'Activate Isochron Scepter ({2}): copy and cast Dramatic Reversal for free.',
-      'Dramatic Reversal untaps all non-land permanents, including your mana rocks.',
-      'Tap your mana rocks again — net positive mana each loop.',
-      'Repeat for infinite mana of whatever colors your rocks produce.',
-    ],
-    result: 'Infinite mana → use to activate Isochron Scepter for infinite spell copies or dump into a draw engine.',
-  },
-  {
-    id: 'thassas-oracle',
-    cards: ["Thassa's Oracle", 'Demonic Consultation'],
-    type: 'Instant Win',
-    color: '#c9684a',
-    icon: '🏆',
-    prereqs: "Thassa's Oracle in hand, Demonic Consultation in hand, 3 mana available ({1}{U}{B} or similar).",
-    steps: [
-      "Cast Demonic Consultation, name a card not in your deck (e.g. \"Zetalpa\").",
-      'Your entire library is exiled searching for the named card.',
-      "Cast Thassa's Oracle — your library is now empty.",
-      "Thassa's Oracle triggers: devotion to blue is 2+, so you win the game.",
-    ],
-    result: "Instant win — Thassa's Oracle's trigger resolves with an empty library, winning the game.",
-  },
-  {
-    id: 'food-chain',
-    cards: ['Food Chain', 'Eternal Scourge'],
-    type: 'Infinite Mana',
-    color: '#4ac97a',
-    icon: '♻️',
-    prereqs: 'Food Chain on the battlefield, Eternal Scourge in hand or graveyard.',
-    steps: [
-      'Cast Eternal Scourge from anywhere (it can be cast from exile).',
-      'Sacrifice Eternal Scourge to Food Chain: exile it and add {4} creature mana.',
-      'Cast Eternal Scourge from exile with {3}, netting {1} creature mana each loop.',
-      'Repeat for infinite creature mana.',
-    ],
-    result: 'Infinite creature mana (can only cast creatures, not spells). Use to cast a large creature that wins the game.',
-  },
-  {
-    id: 'basalt-monolith',
-    cards: ['Basalt Monolith', 'Rings of Brighthearth'],
-    type: 'Infinite Mana',
-    color: '#c9a84c',
-    icon: '💡',
-    prereqs: 'Basalt Monolith and Rings of Brighthearth both on the battlefield. {2} available.',
-    steps: [
-      'Activate Basalt Monolith untap ability.',
-      'Pay {2} to copy the ability with Rings of Brighthearth.',
-      'One copy untaps the Monolith. Tap it for {3}.',
-      'Use the second copy to untap again, netting mana each loop.',
-    ],
-    result: 'Infinite colorless mana. Pair with Comet Storm or Walking Ballista to win.',
-  },
-  {
-    id: 'kiki-jiki',
-    cards: ['Kiki-Jiki, Mirror Breaker', 'Pestermite'],
-    type: 'Infinite Tokens',
-    color: '#a06cd5',
-    icon: '👥',
-    prereqs: 'Kiki-Jiki on the battlefield. Pestermite in hand or already on the battlefield.',
-    steps: [
-      'Cast Pestermite — ETB taps/untaps a permanent, choose to untap Kiki-Jiki.',
-      'Activate Kiki-Jiki: copy Pestermite, giving the token haste.',
-      "New token's ETB untaps Kiki-Jiki again.",
-      'Repeat for infinite hasty 1/2 fliers. Attack for the win.',
-    ],
-    result: 'Infinite hasted creature tokens with flying. Attack for lethal this turn. Any "untap Kiki-Jiki" creature works (Restoration Angel, Deceiver Exarch).',
-  },
-  {
-    id: 'mikaeus-triskelion',
-    cards: ['Mikaeus, the Unhallowed', 'Triskelion'],
-    type: 'Infinite Damage',
-    color: '#c94a4a',
-    icon: '💥',
-    prereqs: 'Mikaeus and Triskelion both on the battlefield.',
-    steps: [
-      "Triskelion enters with 3 counters (Mikaeus gives it +1/+1 too so effectively 3 to shoot with).",
-      'Remove two counters to deal 2 damage to any target.',
-      'Remove the last counter to deal 1 damage to Triskelion itself (now 0 counters, dies).',
-      "Mikaeus's undying returns Triskelion with a +1/+1 counter. Repeat.",
-    ],
-    result: 'Infinite damage to any targets — typically used to deal lethal damage to all opponents at once.',
-  },
+const TABS = [
+  { id: 'search',      label: '🔍 Search'      },
+  { id: 'top-combos',  label: '⭐ Top Combos'  },
+  { id: 'combo-finder', label: '🔄 Combo Finder' },
 ];
 
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
+function cardCount(combo) { return combo.uses?.length ?? 0; }
+function formatSteps(description) {
+  if (!description) return [];
+  return description.split('\n').map(s => s.trim()).filter(Boolean);
+}
+function collectProduces(combo) {
+  return (combo.produces ?? [])
+    .map(p => p.feature?.name ?? p.name ?? '')
+    .filter(Boolean);
+}
+function csbSearchUrl(name) {
+  return `https://commanderspellbook.com/search/?q=card%3A%22${encodeURIComponent(name)}%22`;
+}
+
+/* ── Live API combo card ─────────────────────────────────────────────────── */
+function ComboCard({ combo }) {
+  const [open, setOpen] = useState(false);
+  const cards    = combo.uses?.map(u => u.card?.name ?? '') ?? [];
+  const produces = collectProduces(combo);
+  const steps    = formatSteps(combo.description);
+  const preReqs  = [combo.easyPrerequisites, combo.notablePrerequisites].filter(Boolean).join(' ');
+
+  return (
+    <div className={`combo-card${open ? ' combo-card-open' : ''}`}>
+      <button className="combo-card-header" onClick={() => setOpen(o => !o)}>
+        <div className="combo-card-title-wrap">
+          <span className="combo-size-badge">{cards.length}-card</span>
+          <span className="combo-card-names">
+            {cards.map((n, i) => (
+              <span key={n}>
+                <CardTooltip name={n}>{n}</CardTooltip>
+                {i < cards.length - 1 && ' + '}
+              </span>
+            ))}
+          </span>
+        </div>
+        {produces.length > 0 && (
+          <div className="combo-produces">
+            {produces.slice(0, 2).map((p, i) => (
+              <span key={i} className="combo-produce-tag">{p}</span>
+            ))}
+            {produces.length > 2 && <span className="combo-produce-more">+{produces.length - 2}</span>}
+          </div>
+        )}
+        <span className="combo-expand-icon">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div className="combo-card-body">
+          <div className="combo-cards-row">
+            {cards.map(name => (
+              <Link key={name} to="/prices" state={{ cardName: name }} className="combo-card-link">
+                <CardTooltip name={name}>{name} ↗</CardTooltip>
+              </Link>
+            ))}
+          </div>
+          {preReqs && (
+            <div className="combo-section">
+              <div className="combo-section-label">Prerequisites</div>
+              <p className="combo-prereq-text">{preReqs}</p>
+            </div>
+          )}
+          {steps.length > 0 && (
+            <div className="combo-section">
+              <div className="combo-section-label">Steps</div>
+              <ol className="combo-steps">{steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
+            </div>
+          )}
+          {produces.length > 0 && (
+            <div className="combo-section">
+              <div className="combo-section-label">Produces</div>
+              <div className="combo-produces-full">
+                {produces.map((p, i) => <span key={i} className="combo-produce-tag">{p}</span>)}
+              </div>
+            </div>
+          )}
+          {combo.manaNeeded && (
+            <div className="combo-section">
+              <div className="combo-section-label">Mana Needed</div>
+              <span className="combo-mana">{combo.manaNeeded}</span>
+            </div>
+          )}
+          <a
+            href={`https://commanderspellbook.com/combo/${combo.id}/`}
+            target="_blank" rel="noreferrer"
+            className="combo-external-link"
+          >
+            View on Commander Spellbook ↗
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Static top-combo card ───────────────────────────────────────────────── */
+function TopComboCard({ combo }) {
+  const [open, setOpen] = useState(false);
+  const color = combo.color ?? COMBO_TYPE_COLORS[combo.type] ?? '#c9a84c';
+
+  return (
+    <div
+      className={`combo-card${open ? ' combo-card-open' : ''}`}
+      style={{ '--combo-color': color }}
+    >
+      <button className="combo-card-header" onClick={() => setOpen(o => !o)}>
+        <div className="combo-card-title-wrap">
+          <span className="combo-size-badge" style={{ background: color }}>
+            {combo.icon} {combo.type}
+          </span>
+          <span className="combo-card-names">
+            {combo.cards.map((n, i) => (
+              <span key={n}>
+                <CardTooltip name={n}>{n}</CardTooltip>
+                {i < combo.cards.length - 1 && ' + '}
+              </span>
+            ))}
+          </span>
+        </div>
+        <span className="combo-expand-icon">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="combo-card-body">
+          <div className="combo-cards-row">
+            {combo.cards.map(name => (
+              <Link key={name} to="/prices" state={{ cardName: name }} className="combo-card-link">
+                <CardTooltip name={name}>{name} ↗</CardTooltip>
+              </Link>
+            ))}
+          </div>
+          <div className="combo-section">
+            <div className="combo-section-label">Prerequisites</div>
+            <p className="combo-prereq-text">{combo.prereqs}</p>
+          </div>
+          <div className="combo-section">
+            <div className="combo-section-label">Steps</div>
+            <ol className="combo-steps">
+              {combo.steps.map((s, i) => <li key={i}>{s}</li>)}
+            </ol>
+          </div>
+          <div className="combo-section">
+            <div className="combo-section-label">Result</div>
+            <p className="combo-prereq-text" style={{ color }}>{combo.result}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Combo type educational card ─────────────────────────────────────────── */
 const COMBO_TYPES = [
   {
     type: 'Infinite Mana',
@@ -144,137 +211,6 @@ const COMBO_TYPES = [
   },
 ];
 
-/* ── Helpers ───────────────────────────────────────────────────────────────── */
-function cardCount(combo) { return combo.uses?.length ?? 0; }
-function formatSteps(description) {
-  if (!description) return [];
-  return description.split('\n').map(s => s.trim()).filter(Boolean);
-}
-function collectProduces(combo) {
-  return (combo.produces ?? [])
-    .map(p => p.feature?.name ?? p.name ?? '')
-    .filter(Boolean);
-}
-
-/* ── Live combo card (from API) ─────────────────────────────────────────────── */
-function ComboCard({ combo }) {
-  const [open, setOpen] = useState(false);
-  const cards    = combo.uses?.map(u => u.card?.name ?? '') ?? [];
-  const produces = collectProduces(combo);
-  const steps    = formatSteps(combo.description);
-  const preReqs  = [combo.easyPrerequisites, combo.notablePrerequisites].filter(Boolean).join(' ');
-
-  return (
-    <div className={`combo-card${open ? ' combo-card-open' : ''}`}>
-      <button className="combo-card-header" onClick={() => setOpen(o => !o)}>
-        <div className="combo-card-title-wrap">
-          <span className="combo-size-badge">{cards.length}-card</span>
-          <span className="combo-card-names">{cards.join(' + ')}</span>
-        </div>
-        {produces.length > 0 && (
-          <div className="combo-produces">
-            {produces.slice(0, 2).map((p, i) => (
-              <span key={i} className="combo-produce-tag">{p}</span>
-            ))}
-            {produces.length > 2 && <span className="combo-produce-more">+{produces.length - 2}</span>}
-          </div>
-        )}
-        <span className="combo-expand-icon">{open ? '▲' : '▼'}</span>
-      </button>
-
-      {open && (
-        <div className="combo-card-body">
-          <div className="combo-cards-row">
-            {cards.map(name => (
-              <Link key={name} to="/prices" state={{ cardName: name }} className="combo-card-link">
-                {name} ↗
-              </Link>
-            ))}
-          </div>
-          {preReqs && (
-            <div className="combo-section">
-              <div className="combo-section-label">Prerequisites</div>
-              <p className="combo-prereq-text">{preReqs}</p>
-            </div>
-          )}
-          {steps.length > 0 && (
-            <div className="combo-section">
-              <div className="combo-section-label">Steps</div>
-              <ol className="combo-steps">{steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
-            </div>
-          )}
-          {produces.length > 0 && (
-            <div className="combo-section">
-              <div className="combo-section-label">Produces</div>
-              <div className="combo-produces-full">
-                {produces.map((p, i) => <span key={i} className="combo-produce-tag">{p}</span>)}
-              </div>
-            </div>
-          )}
-          {combo.manaNeeded && (
-            <div className="combo-section">
-              <div className="combo-section-label">Mana Needed</div>
-              <span className="combo-mana">{combo.manaNeeded}</span>
-            </div>
-          )}
-          <a
-            href={`https://commanderspellbook.com/combo/${combo.id}/`}
-            target="_blank" rel="noreferrer"
-            className="combo-external-link"
-          >
-            View on Commander Spellbook ↗
-          </a>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Featured static combo card ─────────────────────────────────────────────── */
-function FeaturedComboCard({ combo }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div
-      className={`combo-card${open ? ' combo-card-open' : ''}`}
-      style={{ '--combo-color': combo.color }}
-    >
-      <button className="combo-card-header" onClick={() => setOpen(o => !o)}>
-        <div className="combo-card-title-wrap">
-          <span className="combo-size-badge" style={{ background: combo.color }}>{combo.type}</span>
-          <span className="combo-card-names">{combo.cards.join(' + ')}</span>
-        </div>
-        <span className="combo-expand-icon">{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <div className="combo-card-body">
-          <div className="combo-cards-row">
-            {combo.cards.map(name => (
-              <Link key={name} to="/prices" state={{ cardName: name }} className="combo-card-link">
-                {name} ↗
-              </Link>
-            ))}
-          </div>
-          <div className="combo-section">
-            <div className="combo-section-label">Prerequisites</div>
-            <p className="combo-prereq-text">{combo.prereqs}</p>
-          </div>
-          <div className="combo-section">
-            <div className="combo-section-label">Steps</div>
-            <ol className="combo-steps">
-              {combo.steps.map((s, i) => <li key={i}>{s}</li>)}
-            </ol>
-          </div>
-          <div className="combo-section">
-            <div className="combo-section-label">Result</div>
-            <p className="combo-prereq-text" style={{ color: combo.color }}>{combo.result}</p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Combo type card ─────────────────────────────────────────────────────────── */
 function ComboTypeCard({ type }) {
   const [open, setOpen] = useState(false);
   return (
@@ -301,12 +237,8 @@ function ComboTypeCard({ type }) {
   );
 }
 
-function csbSearchUrl(name) {
-  return `https://commanderspellbook.com/search/?q=card%3A%22${encodeURIComponent(name)}%22`;
-}
-
-/* ── Combos page ───────────────────────────────────────────────────────────── */
-export default function Combos() {
+/* ── Search tab ──────────────────────────────────────────────────────────── */
+function SearchTab() {
   const [query, setQuery]     = useState('');
   const [combos, setCombos]   = useState(null);
   const [loading, setLoading] = useState(false);
@@ -343,15 +275,8 @@ export default function Combos() {
   const count3 = combos?.filter(c => cardCount(c) === 3).length ?? 0;
 
   return (
-    <div className="page-wrap">
-      <div className="page-header" style={{ '--page-color': '#d4622a' }}>
-        <h1>💥 Combo Searcher</h1>
-        <p>
-          Search for card-specific combos, or explore popular combo types and examples below.
-        </p>
-      </div>
-
-      {/* Search */}
+    <>
+      {/* Search input */}
       <div className="combo-search-row">
         <CardSearchInput
           value={query}
@@ -375,7 +300,7 @@ export default function Combos() {
         </div>
       )}
 
-      {/* Live search results */}
+      {/* Live results */}
       {combos !== null && (
         <>
           {combos.length === 0 ? (
@@ -412,48 +337,123 @@ export default function Combos() {
         </>
       )}
 
-      {/* What is a combo? */}
+      {/* What is a Combo? */}
       <div className="combo-info-section">
         <h3 className="subsection-title" style={{ marginTop: combos !== null ? '2rem' : '0.5rem' }}>
           What is a Combo?
         </h3>
         <p className="section-intro">
-          A <strong>combo</strong> is two or more cards that interact to create a powerful or game-ending effect — usually generating infinite resources, drawing your whole deck, or winning outright. Most competitive Commander decks include at least one combo as a backup win condition.
+          A <strong>combo</strong> is two or more cards that interact to create a powerful or game-ending effect — usually generating infinite resources, drawing your whole deck, or winning outright.
         </p>
-        <p className="section-intro">
-          Combos are generally <strong>2-card</strong> (easiest to assemble) or <strong>3-card</strong> (harder but often more resilient). Click a combo type below to learn how it works and how to stop it.
-        </p>
-
         <div className="combo-list" style={{ marginTop: '0.75rem' }}>
           {COMBO_TYPES.map(t => <ComboTypeCard key={t.type} type={t} />)}
         </div>
       </div>
 
-      {/* Featured combos */}
+      {/* Featured combos (collapsed by default) */}
       <div className="combo-info-section">
         <div className="combo-featured-header" onClick={() => setFeaturedOpen(o => !o)}>
-          <h3 className="subsection-title" style={{ margin: 0 }}>
-            ⭐ Featured Commander Combos
-          </h3>
+          <h3 className="subsection-title" style={{ margin: 0 }}>⭐ Featured Commander Combos</h3>
           <span className="combo-expand-icon">{featuredOpen ? '▲' : '▼'}</span>
         </div>
         <p className="section-intro" style={{ marginTop: '0.4rem' }}>
-          Classic 2-card combos you'll see in competitive Commander. Click to expand.
+          Classic examples. Hover card names to preview them.
         </p>
-        {featuredOpen && (
+        {featuredOpen ? (
           <div className="combo-list" style={{ marginTop: '0.75rem' }}>
-            {FEATURED_COMBOS.map(c => <FeaturedComboCard key={c.id} combo={c} />)}
+            {TOP_COMBOS.slice(0, 6).map(c => <TopComboCard key={c.id} combo={c} />)}
           </div>
-        )}
-        {!featuredOpen && (
-          <button
-            className="combo-show-featured-btn"
-            onClick={() => setFeaturedOpen(true)}
-          >
-            Show {FEATURED_COMBOS.length} featured combos ▼
+        ) : (
+          <button className="combo-show-featured-btn" onClick={() => setFeaturedOpen(true)}>
+            Show featured combos ▼
           </button>
         )}
       </div>
+    </>
+  );
+}
+
+/* ── Top Combos tab ──────────────────────────────────────────────────────── */
+const ALL_TYPES = ['All', ...new Set(TOP_COMBOS.map(c => c.type))];
+
+function TopCombosTab() {
+  const daily = dailyTopCombo();
+  const [typeFilter, setTypeFilter] = useState('All');
+  const [showDaily, setShowDaily] = useState(true);
+
+  const filtered = typeFilter === 'All'
+    ? TOP_COMBOS
+    : TOP_COMBOS.filter(c => c.type === typeFilter);
+
+  return (
+    <>
+      {/* Daily featured */}
+      {showDaily && (
+        <div className="tc-daily">
+          <div className="tc-daily-header">
+            <div>
+              <div className="tc-daily-eyebrow">⭐ Today's Featured Combo</div>
+              <div className="tc-daily-title">{daily.cards.join(' + ')}</div>
+            </div>
+            <button className="btn-ghost-sm" onClick={() => setShowDaily(false)}>✕</button>
+          </div>
+          <TopComboCard combo={daily} />
+        </div>
+      )}
+
+      {/* Type filter */}
+      <div className="tc-filter-row">
+        {ALL_TYPES.map(t => (
+          <button
+            key={t}
+            className={`combo-filter-tab${typeFilter === t ? ' active' : ''}`}
+            onClick={() => setTypeFilter(t)}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      <p className="section-intro">
+        {filtered.length} combo{filtered.length !== 1 ? 's' : ''}. Hover card names to preview the card image.
+      </p>
+
+      <div className="combo-list">
+        {filtered.map(c => <TopComboCard key={c.id} combo={c} />)}
+      </div>
+    </>
+  );
+}
+
+/* ── Main Combos page ────────────────────────────────────────────────────── */
+export default function Combos() {
+  const [tab, setTab] = useState('search');
+
+  return (
+    <div className="page-wrap">
+      <div className="page-header" style={{ '--page-color': '#d4622a' }}>
+        <h1>💥 Combos</h1>
+        <p>
+          Search card-specific combos, explore the top 80 Commander combos with card hover previews,
+          or test your knowledge with the Combo Finder mini-game.
+        </p>
+      </div>
+
+      <nav className="sub-tab-bar">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            className={`sub-tab${tab === t.id ? ' sub-tab-active' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
+      {tab === 'search'       && <SearchTab />}
+      {tab === 'top-combos'   && <TopCombosTab />}
+      {tab === 'combo-finder' && <ComboFinder />}
     </div>
   );
 }
