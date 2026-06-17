@@ -2,42 +2,7 @@ import { useState, useRef } from 'react';
 import { parseBoardState } from '../utils/boardParser';
 import { analyzeInteractions } from '../utils/interactionEngine';
 import { getCardByName } from '../utils/scryfall';
-import { supabase } from '../lib/supabase';
 import { buildKiku, downloadKiku, parseKiku } from '../utils/kikuFormat';
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-function PhotoSlot({ label, file, onFile }) {
-  const inputRef = useRef(null);
-  const preview  = file ? URL.createObjectURL(file) : null;
-  return (
-    <div className="photo-slot" onClick={() => inputRef.current?.click()}>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        style={{ display: 'none' }}
-        onChange={e => onFile(e.target.files[0] ?? null)}
-      />
-      {preview
-        ? <img src={preview} alt={label} className="photo-slot-preview" />
-        : <div className="photo-slot-empty">
-            <span className="photo-slot-icon">📷</span>
-            <span className="photo-slot-label">{label}</span>
-          </div>
-      }
-      {file && <span className="photo-slot-change">tap to change</span>}
-    </div>
-  );
-}
 
 const EXAMPLE = `MY BATTLEFIELD
   - Birds of Paradise (untapped)
@@ -76,13 +41,6 @@ export default function BoardState() {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
-  const [aiAdvice, setAiAdvice]   = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError]     = useState('');
-  const [myPhoto,  setMyPhoto]    = useState(null);
-  const [oppPhoto, setOppPhoto]   = useState(null);
-  const [scanLoading, setScanLoading] = useState(false);
-  const [scanError,   setScanError]   = useState('');
   const [gameName, setGameName]   = useState('MTG Game');
   const [importError, setImportError] = useState('');
   const kikuRef = useRef(null);
@@ -104,56 +62,6 @@ export default function BoardState() {
       setImportError('Import failed: ' + e.message);
     } finally {
       if (kikuRef.current) kikuRef.current.value = '';
-    }
-  }
-
-  async function scanPhotos() {
-    if (!myPhoto && !oppPhoto) return;
-    if (!supabase) { setScanError('Supabase not configured.'); return; }
-    setScanLoading(true); setScanError('');
-    try {
-      const [myB64, oppB64] = await Promise.all([
-        myPhoto  ? fileToBase64(myPhoto)  : Promise.resolve(null),
-        oppPhoto ? fileToBase64(oppPhoto) : Promise.resolve(null),
-      ]);
-      const body = {
-        myImage:      myB64  ?? undefined,
-        myMediaType:  myPhoto?.type  ?? undefined,
-        oppImage:     oppB64 ?? undefined,
-        oppMediaType: oppPhoto?.type ?? undefined,
-      };
-      const { data, error: fnErr } = await supabase.functions.invoke('mtg-vision-parse', { body });
-      if (fnErr) throw fnErr;
-      if (data?.error) throw new Error(data.error);
-      setText(data.boardText ?? '');
-      setAnalysis(null);
-    } catch (e) {
-      setScanError('Scan failed — ' + (e?.message ?? 'please try again.'));
-    } finally {
-      setScanLoading(false);
-    }
-  }
-
-  async function getAiAdvice() {
-    if (!text.trim()) return;
-    if (!supabase) {
-      setAiError('Supabase is not configured. Check your .env.local file.');
-      return;
-    }
-    setAiLoading(true);
-    setAiError('');
-    setAiAdvice('');
-    try {
-      const { data, error: fnErr } = await supabase.functions.invoke('mtg-board-advisor', {
-        body: { boardText: text, priority },
-      });
-      if (fnErr) throw fnErr;
-      if (data?.error) throw new Error(data.error);
-      setAiAdvice(data.advice);
-    } catch (e) {
-      setAiError('AI analysis failed — ' + (e?.message ?? 'please try again.'));
-    } finally {
-      setAiLoading(false);
     }
   }
 
@@ -218,24 +126,6 @@ export default function BoardState() {
             />
           </div>
           {importError && <p className="form-error">{importError}</p>}
-
-          {/* ── Photo scan ──────────────────────────────── */}
-          <div className="photo-scan-section">
-            <p className="photo-scan-label">📷 Scan from photos</p>
-            <div className="photo-slots-row">
-              <PhotoSlot label="My Board"       file={myPhoto}  onFile={setMyPhoto} />
-              <PhotoSlot label="Opponent's Board" file={oppPhoto} onFile={setOppPhoto} />
-            </div>
-            {scanError && <p className="form-error">{scanError}</p>}
-            <button
-              className="btn-secondary btn-scan"
-              onClick={scanPhotos}
-              disabled={scanLoading || (!myPhoto && !oppPhoto)}
-            >
-              {scanLoading ? '🔍 Scanning…' : '🔍 Scan & Fill Board State'}
-            </button>
-            <p className="photo-scan-hint">Claude reads the photos and fills the text below. Review before analyzing.</p>
-          </div>
 
           <textarea
             className="board-textarea"
@@ -392,34 +282,6 @@ export default function BoardState() {
         </div>
       </div>
 
-      {/* ── AI Strategic Advisor ───────────────────────────────────────────── */}
-      <div className="ai-advisor-wrap">
-        <div className="ai-advisor-header">
-          <div>
-            <h2 className="ai-advisor-title">AI Strategic Advisor</h2>
-            <p className="ai-advisor-hint">
-              Claude looks up your cards on Scryfall and gives strategic advice beyond the rule-check above.
-            </p>
-          </div>
-          <button
-            className="btn-primary"
-            onClick={getAiAdvice}
-            disabled={aiLoading || !text.trim()}
-          >
-            {aiLoading ? 'Analyzing…' : 'Get AI Advice'}
-          </button>
-        </div>
-
-        {aiError && <p className="form-error">{aiError}</p>}
-
-        {aiLoading && <div className="board-loading">Claude is reviewing your board state…</div>}
-
-        {aiAdvice && (
-          <div className="ai-advice-box">
-            <p className="ai-advice-text">{aiAdvice}</p>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
