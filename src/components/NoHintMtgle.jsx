@@ -376,7 +376,7 @@ export default function NoHintMtgle({ overrideCard, onNewGame } = {}) {
                   const rows = game.guesses.map(g =>
                     g.isCorrect ? '🟩🟩🟩🟩🟩' : '⬛⬛⬛⬛⬛'
                   ).join('\n');
-                  const text = `🧠 No-Hint MTGLE #${puzzleNum} ${result}\n${rows}\nhttps://JohnMiranda17.github.io/mtg-hub/no-hint-mtgle`;
+                  const text = `🧠 No-Hint MTGLE #${puzzleNum} ${result}\n${rows}\nhttps://JohnMiranda17.github.io/mtg-hub/mtgle?mode=no-hint`;
                   navigator.clipboard?.writeText(text);
                 }}
               >

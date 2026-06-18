@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Mtgle from '../components/Mtgle';
 import NoHintMtgle from '../components/NoHintMtgle';
 
@@ -9,7 +9,10 @@ const MODES = [
 ];
 
 export default function MtglePage() {
-  const [mode, setMode] = useState('daily');
+  const [searchParams] = useSearchParams();
+  const [mode, setMode] = useState(() =>
+    searchParams.get('mode') === 'no-hint' ? 'no-hint' : 'daily'
+  );
 
   return (
     <div className="page-wrap">
