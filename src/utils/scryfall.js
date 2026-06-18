@@ -1,11 +1,17 @@
 const BASE = 'https://api.scryfall.com';
 
+// Required by Scryfall API policy (August 2024): every request must include User-Agent and Accept headers.
+const HEADERS = {
+  'User-Agent': 'mtg-hub/1.0 (https://github.com/JohnMiranda17/mtg-hub)',
+  'Accept': 'application/json',
+};
+
 // Simple in-memory cache to stay within Scryfall's rate limit guidelines
 const cache = new Map();
 
 async function sfetch(url) {
   if (cache.has(url)) return cache.get(url);
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Scryfall ${res.status}: ${url}`);
   const data = await res.json();
   cache.set(url, data);
@@ -47,7 +53,7 @@ export async function getPrintings(card) {
 
 export async function searchCards(query) {
   const url = `${BASE}/cards/search?q=${encodeURIComponent(query)}&order=name`;
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: HEADERS });
   if (res.status === 404) return { data: [], total: 0 };
   if (!res.ok) throw new Error(`Scryfall ${res.status}`);
   const json = await res.json();
@@ -57,7 +63,7 @@ export async function searchCards(query) {
 // Not cached — each call must return a different random card.
 export async function getRandomCard(query) {
   const url = `${BASE}/cards/random?q=${encodeURIComponent(query)}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) {
     if (res.status === 404) throw new Error('No cards match those filters. Try broadening your search.');
     throw new Error(`Scryfall error ${res.status}`);

@@ -201,7 +201,8 @@ describe('CustomMtglePage builder form', () => {
     fireEvent.click(screen.getByRole('button', { name: /Create Game/i }));
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('api.scryfall.com/cards/random')
+        expect.stringContaining('api.scryfall.com/cards/random'),
+        expect.objectContaining({ headers: expect.objectContaining({ 'User-Agent': expect.stringContaining('mtg-hub') }) })
       );
     });
   });
