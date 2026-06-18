@@ -441,11 +441,18 @@ export const COMBO_FINDER_PUZZLES = [
       'Debt to the Deathless', 'Vampire Nocturnus',
     ],
     mana: { W: 0, U: 0, B: 4, R: 1, G: 0, C: 0 },
-    combo: {
-      pieces: ['Sanguine Bond', 'Exquisite Blood'],
-      result: 'infinite-damage',
-      explanation: "With both enchantments on the battlefield, gaining any life triggers the loop. Gain 1 life → Sanguine Bond triggers: an opponent loses 1 life → Exquisite Blood triggers: you gain 1 life → Sanguine Bond triggers again. The loop continues automatically until an opponent is dead. Just gain 1 life to start (e.g. cast Night's Whisper for 2 life lost, or any life gain source). Vito alone combos with Exquisite Blood in the same way.",
-    },
+    combos: [
+      {
+        pieces: ['Sanguine Bond', 'Exquisite Blood'],
+        result: 'infinite-damage',
+        explanation: "With both enchantments on the battlefield, gaining any life triggers the loop. Gain 1 life → Sanguine Bond triggers: an opponent loses 1 life → Exquisite Blood triggers: you gain 1 life → Sanguine Bond triggers again. The loop continues automatically until an opponent is dead. Just gain 1 life to start (e.g. cast Night's Whisper).",
+      },
+      {
+        pieces: ['Vito, Thorn of the Dusk Rose', 'Exquisite Blood'],
+        result: 'infinite-damage',
+        explanation: "Vito's ability mirrors Sanguine Bond: whenever you gain life, an opponent loses that much life. With Exquisite Blood on the battlefield, that life loss triggers you to gain life, which triggers Vito again. The loop runs identically — just gain any amount of life to start it.",
+      },
+    ],
   },
 ];
 

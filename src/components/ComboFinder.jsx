@@ -71,11 +71,25 @@ export default function ComboFinder() {
   }
 
   function submit() {
-    const required = new Set(puzzle.combo.pieces.map(n => n.toLowerCase()));
+    const combos = puzzle.combos ?? [puzzle.combo];
     const picked = new Set([...selected].map(n => n.toLowerCase()));
-    const piecesOk = required.size === picked.size && [...required].every(n => picked.has(n));
-    const resultOk = resultType === puzzle.combo.result;
-    setFeedback(piecesOk && resultOk ? 'correct' : { piecesOk, resultOk });
+
+    const matched = combos.find(c => {
+      const required = new Set(c.pieces.map(n => n.toLowerCase()));
+      return required.size === picked.size && [...required].every(n => picked.has(n)) && resultType === c.result;
+    });
+
+    if (matched) {
+      setFeedback({ correct: true, combo: matched });
+      return;
+    }
+
+    const piecesOk = combos.some(c => {
+      const required = new Set(c.pieces.map(n => n.toLowerCase()));
+      return required.size === picked.size && [...required].every(n => picked.has(n));
+    });
+    const resultOk = combos.some(c => resultType === c.result);
+    setFeedback({ correct: false, piecesOk, resultOk });
   }
 
   function goPrev() {
@@ -188,7 +202,7 @@ export default function ComboFinder() {
           <button
             className="btn-primary"
             onClick={submit}
-            disabled={selected.size === 0 || !resultType || feedback === 'correct'}
+            disabled={selected.size === 0 || !resultType || feedback?.correct}
           >
             Submit
           </button>
@@ -198,7 +212,7 @@ export default function ComboFinder() {
           <button
             className="btn-ghost-sm cf-give-up-btn"
             onClick={() => { setRevealed(true); setFeedback(null); }}
-            disabled={revealed || feedback === 'correct'}
+            disabled={revealed || feedback?.correct}
           >
             Give Up
           </button>
@@ -206,16 +220,16 @@ export default function ComboFinder() {
       </div>
 
       {/* Feedback */}
-      {feedback === 'correct' && (
+      {feedback?.correct && (
         <div className="cf-feedback cf-feedback-correct">
           <span className="cf-feedback-icon">✅</span>
           <div>
             <div className="cf-feedback-title">Combo found!</div>
-            <div className="cf-feedback-explanation">{puzzle.combo.explanation}</div>
+            <div className="cf-feedback-explanation">{feedback.combo.explanation}</div>
           </div>
         </div>
       )}
-      {feedback && feedback !== 'correct' && (
+      {feedback && !feedback.correct && (
         <div className="cf-feedback cf-feedback-wrong">
           <span className="cf-feedback-icon">❌</span>
           <div>
@@ -236,18 +250,21 @@ export default function ComboFinder() {
       )}
 
       {/* Give-up reveal */}
-      {revealed && feedback !== 'correct' && (
+      {revealed && !feedback?.correct && (
         <div className="cf-feedback cf-feedback-reveal">
           <span className="cf-feedback-icon">💡</span>
           <div>
-            <div className="cf-feedback-title">The Combo</div>
-            <div className="cf-feedback-pieces">
-              <strong>Pieces:</strong> {puzzle.combo.pieces.join(' + ')}
-            </div>
-            <div className="cf-feedback-pieces">
-              <strong>Result:</strong> {RESULT_TYPES[puzzle.combo.result]}
-            </div>
-            <div className="cf-feedback-explanation">{puzzle.combo.explanation}</div>
+            <div className="cf-feedback-title">{(puzzle.combos ?? [puzzle.combo]).length > 1 ? 'The Combos' : 'The Combo'}</div>
+            {(puzzle.combos ?? [puzzle.combo]).map((c, i) => (
+              <div key={i} className="cf-reveal-combo">
+                {(puzzle.combos ?? [puzzle.combo]).length > 1 && (
+                  <div className="cf-feedback-title" style={{ fontSize: '0.85em', marginBottom: '0.2rem' }}>Combo {i + 1}</div>
+                )}
+                <div className="cf-feedback-pieces"><strong>Pieces:</strong> {c.pieces.join(' + ')}</div>
+                <div className="cf-feedback-pieces"><strong>Result:</strong> {RESULT_TYPES[c.result]}</div>
+                <div className="cf-feedback-explanation">{c.explanation}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}

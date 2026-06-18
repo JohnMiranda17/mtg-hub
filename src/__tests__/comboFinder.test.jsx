@@ -33,11 +33,14 @@ describe('COMBO_FINDER_PUZZLES data', () => {
       expect(p.difficulty, `puzzle ${p.id} missing difficulty`).toBeTruthy();
       expect(Array.isArray(p.board), `puzzle ${p.id} board must be array`).toBe(true);
       expect(p.board.length, `puzzle ${p.id} board must have cards`).toBeGreaterThan(0);
-      expect(p.combo, `puzzle ${p.id} missing combo`).toBeDefined();
-      expect(Array.isArray(p.combo.pieces), `puzzle ${p.id} pieces must be array`).toBe(true);
-      expect(p.combo.pieces.length, `puzzle ${p.id} needs ≥2 pieces`).toBeGreaterThanOrEqual(2);
-      expect(p.combo.result, `puzzle ${p.id} missing result type`).toBeTruthy();
-      expect(p.combo.explanation, `puzzle ${p.id} missing explanation`).toBeTruthy();
+      const combos = p.combos ?? (p.combo ? [p.combo] : []);
+      expect(combos.length, `puzzle ${p.id} must have at least one combo`).toBeGreaterThan(0);
+      combos.forEach((c, i) => {
+        expect(Array.isArray(c.pieces), `puzzle ${p.id} combo[${i}] pieces must be array`).toBe(true);
+        expect(c.pieces.length, `puzzle ${p.id} combo[${i}] needs ≥2 pieces`).toBeGreaterThanOrEqual(2);
+        expect(c.result, `puzzle ${p.id} combo[${i}] missing result type`).toBeTruthy();
+        expect(c.explanation, `puzzle ${p.id} combo[${i}] missing explanation`).toBeTruthy();
+      });
     });
   });
 
@@ -53,10 +56,13 @@ describe('COMBO_FINDER_PUZZLES data', () => {
 
   test('each puzzle result type is a known RESULT_TYPES key', () => {
     COMBO_FINDER_PUZZLES.forEach(p => {
-      expect(
-        Object.keys(RESULT_TYPES),
-        `puzzle ${p.id} result "${p.combo.result}" is not a valid RESULT_TYPES key`
-      ).toContain(p.combo.result);
+      const combos = p.combos ?? [p.combo];
+      combos.forEach((c, i) => {
+        expect(
+          Object.keys(RESULT_TYPES),
+          `puzzle ${p.id} combo[${i}] result "${c.result}" is not a valid RESULT_TYPES key`
+        ).toContain(c.result);
+      });
     });
   });
 
@@ -76,11 +82,14 @@ describe('COMBO_FINDER_PUZZLES data', () => {
         ...(p.deck ?? []).map(n => n.toLowerCase()),
         ...(p.oppBoard ?? []).map(c => c.name.toLowerCase()),
       ]);
-      p.combo.pieces.forEach(piece => {
-        expect(
-          allCardNames.has(piece.toLowerCase()),
-          `puzzle ${p.id}: combo piece "${piece}" not found in any zone`
-        ).toBe(true);
+      const combos = p.combos ?? [p.combo];
+      combos.forEach((c, i) => {
+        c.pieces.forEach(piece => {
+          expect(
+            allCardNames.has(piece.toLowerCase()),
+            `puzzle ${p.id} combo[${i}]: piece "${piece}" not found in any zone`
+          ).toBe(true);
+        });
       });
     });
   });
