@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import CardSearchInput from '../components/CardSearchInput';
 import CardTooltip from '../components/CardTooltip';
 import ComboFinder from '../components/ComboFinder';
-import GameWinner from '../components/GameWinner';
 import { TOP_COMBOS, COMBO_TYPE_COLORS, dailyTopCombo } from '../data/topCombos';
 
 const PROXY_BASE = import.meta.env.VITE_SPELLBOOK_PROXY ?? '';
@@ -431,7 +430,12 @@ export default function Combos() {
       {tab === 'search'       && <SearchTab />}
       {tab === 'top-combos'   && <TopCombosTab />}
       {tab === 'combo-finder' && <ComboFinder />}
-      {tab === 'game-winner'  && <GameWinner />}
+      {tab === 'game-winner'  && (
+        <div className="board-empty" style={{ padding: '2rem' }}>
+          <p><strong>🏆 Game Winner — Coming Soon</strong></p>
+          <p className="board-empty-hint">This mini-game is currently in progress. Check back later!</p>
+        </div>
+      )}
     </div>
   );
 }

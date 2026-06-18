@@ -151,29 +151,9 @@ describe('Combos page', () => {
     expect(screen.getByRole('button', { name: /submit/i })).toBeDisabled();
   });
 
-  test('switching to Game Winner tab renders the puzzle', () => {
+  test('switching to Game Winner tab shows coming soon placeholder', () => {
     renderCombos();
     fireEvent.click(screen.getByRole('button', { name: /Game Winner/i }));
-    expect(screen.getAllByText(/🏆 Game Winner/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Puzzle \d+\/\d+/)).toBeInTheDocument();
-  });
-
-  test('Game Winner shows opponent life', () => {
-    renderCombos();
-    fireEvent.click(screen.getByRole('button', { name: /Game Winner/i }));
-    expect(screen.getByText(/Opponent life/i)).toBeInTheDocument();
-  });
-
-  test('Game Winner shows Submit and Reset buttons', () => {
-    renderCombos();
-    fireEvent.click(screen.getByRole('button', { name: /Game Winner/i }));
-    expect(screen.getByRole('button', { name: /submit/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /reset/i })).toBeInTheDocument();
-  });
-
-  test('Game Winner submit is disabled without selections', () => {
-    renderCombos();
-    fireEvent.click(screen.getByRole('button', { name: /Game Winner/i }));
-    expect(screen.getByRole('button', { name: /submit/i })).toBeDisabled();
+    expect(screen.getByText(/Coming Soon/i)).toBeInTheDocument();
   });
 });
